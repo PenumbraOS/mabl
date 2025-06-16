@@ -1,0 +1,1 @@
+This directory contains entirely LLM generated documentation for the purposes of further implementation. This is an experiment on how LLMs will manage with this kind of "fake" documentation. Humans should not rely on this information as accurate.
