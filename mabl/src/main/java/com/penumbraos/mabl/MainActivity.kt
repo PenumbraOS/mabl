@@ -2,32 +2,157 @@
 
 package com.penumbraos.mabl
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.penumbraos.mabl.discovery.PluginManager
 import com.penumbraos.mabl.discovery.PluginService
+import com.penumbraos.mabl.sdk.ISttCallback
+import com.penumbraos.mabl.sdk.ISttService
+import com.penumbraos.mabl.sdk.ITtsCallback
+import com.penumbraos.mabl.sdk.ITtsService
+import com.penumbraos.mabl.sdk.PluginConstants
 import com.penumbraos.mabl.ui.theme.MABLTheme
 
+
 class MainActivity : ComponentActivity() {
+    private var sttService: ISttService? = null
+    private var ttsService: ITtsService? = null
+    private val sttConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            Log.d("MainActivity", "onServiceConnected: stt")
+            sttService = ISttService.Stub.asInterface(service)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            sttService = null
+        }
+    }
+    private val ttsConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            Log.d("MainActivity", "onServiceConnected: tts")
+            ttsService = ITtsService.Stub.asInterface(service)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            ttsService = null
+        }
+    }
+
+    private val conversationState = mutableStateOf("")
+    private val transcriptionState = mutableStateOf("")
+    private val sttCallback = object : ISttCallback.Stub() {
+        override fun onPartialTranscription(partialText: String) {
+            runOnUiThread {
+                transcriptionState.value = partialText
+            }
+        }
+
+        override fun onFinalTranscription(finalText: String) {
+            runOnUiThread {
+                conversationState.value += "You: $finalText\n"
+                ttsService?.speak(finalText, object : ITtsCallback.Stub() {
+                    override fun onSpeechStarted() {}
+                    override fun onSpeechFinished() {}
+                    override fun onError(errorMessage: String) {
+                        runOnUiThread {
+                            conversationState.value += "Error: $errorMessage\n"
+                        }
+                    }
+                })
+            }
+        }
+
+        override fun onError(errorMessage: String) {
+            runOnUiThread {
+                conversationState.value += "STT Error: $errorMessage\n"
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MABLTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    PluginDiscoveryScreen(PluginManager(this))
+                    Column {
+//                        PluginDiscoveryScreen(PluginManager(this@MainActivity))
+//                        Divider()
+                        ConversationUI(
+                            conversation = conversationState.value,
+                            transcription = transcriptionState.value,
+                            onStartListening = { sttService?.startListening(sttCallback) },
+                            onStopListening = { sttService?.stopListening() }
+                        )
+                    }
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!bindService(
+                Intent(PluginConstants.ACTION_STT_SERVICE).apply {
+                    setPackage("com.penumbraos.plugins.demo")
+                },
+                sttConnection,
+                BIND_AUTO_CREATE
+            )
+        ) {
+            Log.e("MainActivity", "Could not set up binding for STT service")
+        }
+
+        if (bindService(
+                Intent(PluginConstants.ACTION_TTS_SERVICE).apply {
+                    setPackage("com.penumbraos.plugins.demo")
+                },
+                ttsConnection,
+                BIND_AUTO_CREATE
+            )
+        ) {
+            Log.e("MainActivity", "Could not set up binding for TTS service")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unbindService(sttConnection)
+        unbindService(ttsConnection)
     }
 }
 
@@ -82,6 +207,53 @@ fun PluginDiscoveryScreen(pluginManager: PluginManager) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ConversationUI(
+    conversation: String,
+    transcription: String,
+    onStartListening: () -> Unit,
+    onStopListening: () -> Unit
+) {
+    var isListening by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Conversation:",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = conversation,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .border(1.dp, MaterialTheme.colorScheme.outline)
+                .padding(8.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Current transcription: $transcription",
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = {
+                if (isListening) {
+                    onStopListening()
+                } else {
+                    onStartListening()
+                }
+                isListening = !isListening
+            }
+        ) {
+            Text(if (isListening) "Stop Listening" else "Start Listening")
         }
     }
 }
