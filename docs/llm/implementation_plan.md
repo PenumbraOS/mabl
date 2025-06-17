@@ -45,11 +45,33 @@ graph TD
 
 #### Phase 1: Core Application and Plugin Discovery
 
-- **Goal:** Establish the foundational MABL application and its ability to discover plugins.
+- **Goal:** Establish the foundational MABL application and its ability to discover plugin **services** using Android's `Intent` filter system.
 - **APIs/Components:**
   - **MABL Core App:** A basic Android application set as the launcher.
-  - **Plugin Discovery:** Use Android's `PackageManager` to find services with specific intent filters (e.g., `com.penumbraos.intent.action.PLUGIN_INFO`).
-  - **Plugin Metdata:** Define a `meta-data` structure in `AndroidManifest.xml` for plugins to declare their capabilities (e.g., "provides-stt", "provides-tts", "provides-llm", "provides-tool").
+  - **Plugin Discovery (MABL-side):** MABL will use `PackageManager.queryIntentServices()` to find services that can handle specific actions (e.g., `com.penumbraos.mabl.sdk.ACTION_STT_SERVICE`). This replaces the need to scan for applications with a special metadata tag.
+  - **Capability Declaration (Plugin-side):**
+    - Each service a plugin offers (STT, TTS, LLM, Tool) will be declared as a `<service>` in the `AndroidManifest.xml`.
+    - Each `<service>` tag will contain an `<intent-filter>` specifying the action it handles.
+    - Specific capabilities, like the name of a tool, can be declared via `<meta-data>` tags directly within the `<service>` block.
+  - **Capability Parsing (MABL-side):**
+    - MABL's `PluginManager` will query the `PackageManager` for each service type.
+    - It will parse the `ResolveInfo` object for each discovered service to get its component name and read any associated `<meta-data>`. This provides a structured model of the plugin's offerings.
+- **SDK (`PluginConstants.kt`):**
+
+  - This file is central to the discovery process. It will define the standard intent actions and metadata keys.
+  - **Example Constants:**
+
+    ```kotlin
+    // Intent Actions for Service Discovery
+    const val ACTION_STT_SERVICE = "com.penumbraos.mabl.sdk.action.STT_SERVICE"
+    const val ACTION_TTS_SERVICE = "com.penumbraos.mabl.sdk.action.TTS_SERVICE"
+    const val ACTION_LLM_SERVICE = "com.penumbraos.mabl.sdk.action.LLM_SERVICE"
+    const val ACTION_TOOL_SERVICE = "com.penumbraos.mabl.sdk.action.TOOL_SERVICE"
+
+    // Metadata Keys for Capability Declaration
+    const val METADATA_TOOLS = "com.penumbraos.mabl.sdk.metadata.TOOLS" // e.g. "create_timer,get_weather"
+    ```
+
 - **Directory Structure:**
 
   ```
@@ -69,7 +91,7 @@ graph TD
   └── build.gradle
   ```
 
-- **Demo:** Launch the MABL app. It will display a list of "discovered" mock plugins by reading their `meta-data`. No actual communication yet.
+- **Demo:** Launch the MABL app. It will query the `PackageManager` and display a list of "discovered" mock plugins. No actual communication yet.
 
 #### Phase 2: Basic STT/TTS Communication
 

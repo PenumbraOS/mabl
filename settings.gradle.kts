@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "MABL"
 include(":mabl")
 include(":sdk")
+include(":plugins:demo")
