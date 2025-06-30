@@ -32,6 +32,20 @@
                 android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
                 android:value="Sample text-to-speech service" />
         </service>
+
+        <service
+            android:name=".DemoLlmService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.LLM_SERVICE" />
+            </intent-filter>
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Demo LLM Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="Sample language model service" />
+        </service>
     </application>
 
 </manifest>

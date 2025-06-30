@@ -44,6 +44,9 @@ import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.sdk.ITtsCallback
 import com.penumbraos.mabl.sdk.ITtsService
+import com.penumbraos.mabl.sdk.ILlmCallback
+import com.penumbraos.mabl.sdk.ILlmService
+import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.PluginConstants
 import com.penumbraos.mabl.ui.theme.MABLTheme
 
@@ -51,6 +54,7 @@ import com.penumbraos.mabl.ui.theme.MABLTheme
 class MainActivity : ComponentActivity() {
     private var sttService: ISttService? = null
     private var ttsService: ITtsService? = null
+    private var llmService: ILlmService? = null
     private val sttConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d("MainActivity", "onServiceConnected: stt")
@@ -71,6 +75,16 @@ class MainActivity : ComponentActivity() {
             ttsService = null
         }
     }
+    private val llmConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            Log.d("MainActivity", "onServiceConnected: llm")
+            llmService = ILlmService.Stub.asInterface(service)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            llmService = null
+        }
+    }
 
     private val conversationState = mutableStateOf("")
     private val transcriptionState = mutableStateOf("")
@@ -84,12 +98,27 @@ class MainActivity : ComponentActivity() {
         override fun onFinalTranscription(finalText: String) {
             runOnUiThread {
                 conversationState.value += "You: $finalText\n"
-                ttsService?.speak(finalText, object : ITtsCallback.Stub() {
-                    override fun onSpeechStarted() {}
-                    override fun onSpeechFinished() {}
-                    override fun onError(errorMessage: String) {
+                llmService?.generateResponse(finalText, object : ILlmCallback.Stub() {
+                    override fun onResponse(response: LlmResponse) {
                         runOnUiThread {
-                            conversationState.value += "Error: $errorMessage\n"
+                            val responseText = response.text ?: "No response text"
+                            conversationState.value += "MABL: $responseText\n"
+                            
+                            if (response.toolCalls.isNotEmpty()) {
+                                response.toolCalls.forEach { toolCall ->
+                                    conversationState.value += "TOOL_CALL: ${toolCall.name}, parameters: ${toolCall.parameters}\n"
+                                }
+                            }
+                            
+                            ttsService?.speak(responseText, object : ITtsCallback.Stub() {
+                                override fun onSpeechStarted() {}
+                                override fun onSpeechFinished() {}
+                                override fun onError(errorMessage: String) {
+                                    runOnUiThread {
+                                        conversationState.value += "TTS Error: $errorMessage\n"
+                                    }
+                                }
+                            })
                         }
                     }
                 })
@@ -137,7 +166,7 @@ class MainActivity : ComponentActivity() {
             Log.e("MainActivity", "Could not set up binding for STT service")
         }
 
-        if (bindService(
+        if (!bindService(
                 Intent(PluginConstants.ACTION_TTS_SERVICE).apply {
                     setPackage("com.penumbraos.plugins.demo")
                 },
@@ -147,12 +176,24 @@ class MainActivity : ComponentActivity() {
         ) {
             Log.e("MainActivity", "Could not set up binding for TTS service")
         }
+
+        if (!bindService(
+                Intent(PluginConstants.ACTION_LLM_SERVICE).apply {
+                    setPackage("com.penumbraos.plugins.demo")
+                },
+                llmConnection,
+                BIND_AUTO_CREATE
+            )
+        ) {
+            Log.e("MainActivity", "Could not set up binding for LLM service")
+        }
     }
 
     override fun onStop() {
         super.onStop()
         unbindService(sttConnection)
         unbindService(ttsConnection)
+        unbindService(llmConnection)
     }
 }
 
