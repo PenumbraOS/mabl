@@ -1,110 +1,125 @@
 package com.penumbraos.plugins.demo
 
+import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.os.Handler
+import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
-import android.os.Looper
 import android.os.RemoteException
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
+import com.penumbraos.sdk.PenumbraClient
+import com.penumbraos.sdk.api.types.SttRecognitionListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DemoSttService : Service() {
-    private val mainThread = Handler(Looper.getMainLooper())
-
-    private var speechRecognizer: SpeechRecognizer? = null
     private var currentCallback: ISttCallback? = null
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    private lateinit var client: PenumbraClient
+
+    @SuppressLint("ForegroundServiceType")
+    override fun onCreate() {
+        super.onCreate()
+        client = PenumbraClient(applicationContext, true)
+
+        createNotificationChannel()
+        startForeground(NOTIFICATION_ID, createNotification())
+
+        // Hack to start STT service in advance of usage
+        client.stt.launchListenerProcess(applicationContext)
+
+        scope.launch {
+            client.waitForBridge()
+            Log.i("DemoSttService", "Bridge start received, setting up STT")
+
+            client.stt.initialize(object : SttRecognitionListener() {
+                override fun onError(error: Int) {
+                    try {
+                        currentCallback?.onError("Recognition error: $error")
+                    } catch (e: RemoteException) {
+                        Log.e("DemoSttService", "Callback error", e)
+                    }
+                }
+
+                override fun onResults(results: Bundle?) {
+                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()?.let {
+                            try {
+                                currentCallback?.onFinalTranscription(it)
+                            } catch (e: RemoteException) {
+                                Log.e("DemoSttService", "Callback error", e)
+                            }
+                        }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull()?.let {
+                            try {
+                                currentCallback?.onPartialTranscription(it)
+                            } catch (e: RemoteException) {
+                                Log.e("DemoSttService", "Callback error", e)
+                            }
+                        }
+                }
+            })
+        }
+    }
 
     private val binder = object : ISttService.Stub() {
         override fun startListening(callback: ISttCallback) {
             currentCallback = callback
-            startSpeechRecognition()
+            Log.i("DemoSttService", "Starting STT")
+            client.stt.startListening()
         }
 
         override fun stopListening() {
-            Handler(Looper.getMainLooper()).post {
-                speechRecognizer?.stopListening()
-            }
-        }
-    }
-
-    // TODO: This doesn't work. It looks like maybe Humane removed the STT service?
-    private fun startSpeechRecognition() {
-        mainThread.post {
-            speechRecognizer =
-                SpeechRecognizer.createOnDeviceSpeechRecognizer(this@DemoSttService).apply {
-                    setRecognitionListener(object : RecognitionListener {
-                        override fun onReadyForSpeech(params: android.os.Bundle?) {
-                            try {
-                                currentCallback?.onPartialTranscription("Listening...")
-                            } catch (e: RemoteException) {
-                                Log.e("DemoSttService", "Callback error", e)
-                            }
-                        }
-
-                        override fun onBeginningOfSpeech() {}
-
-                        override fun onRmsChanged(rmsdB: Float) {}
-
-                        override fun onBufferReceived(buffer: ByteArray?) {}
-
-                        override fun onEndOfSpeech() {}
-
-                        override fun onError(error: Int) {
-                            try {
-                                currentCallback?.onError("Recognition error: $error")
-                            } catch (e: RemoteException) {
-                                Log.e("DemoSttService", "Callback error", e)
-                            }
-                        }
-
-                        override fun onResults(results: android.os.Bundle) {
-                            results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                                ?.firstOrNull()?.let {
-                                    try {
-                                        currentCallback?.onFinalTranscription(it)
-                                    } catch (e: RemoteException) {
-                                        Log.e("DemoSttService", "Callback error", e)
-                                    }
-                                }
-                        }
-
-                        override fun onPartialResults(partialResults: android.os.Bundle) {
-                            partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                                ?.firstOrNull()?.let {
-                                    try {
-                                        currentCallback?.onPartialTranscription(it)
-                                    } catch (e: RemoteException) {
-                                        Log.e("DemoSttService", "Callback error", e)
-                                    }
-                                }
-                        }
-
-                        override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
-                    })
-
-                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                        putExtra(
-                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                        )
-                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    }
-                    startListening(intent)
-                }
+            Log.i("DemoSttService", "Stopping STT")
+            client.stt.stopListening()
         }
     }
 
     override fun onDestroy() {
-        speechRecognizer?.destroy()
+        client.stt.destroy()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent): IBinder {
         return binder
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "STT Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun createNotification(): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("STT Service")
+            .setContentText("Speech recognition service is running")
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .build()
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "stt_service_channel"
+        private const val NOTIFICATION_ID = 1001
     }
 }

@@ -10,6 +10,8 @@ activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 appcompat = "1.7.1"
 material = "1.12.0"
+penumbraos-sdk = "b9dc39f"
+smolchat = "v9"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,6 +30,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
+smolchat = { group = "com.github.shubham0204", name = "SmolChat-Android", version.ref = "smolchat" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

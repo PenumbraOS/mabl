@@ -38,17 +38,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.penumbraos.mabl.discovery.PluginManager
 import com.penumbraos.mabl.discovery.PluginService
+import com.penumbraos.mabl.sdk.ILlmCallback
+import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.sdk.ITtsCallback
 import com.penumbraos.mabl.sdk.ITtsService
-import com.penumbraos.mabl.sdk.ILlmCallback
-import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.PluginConstants
 import com.penumbraos.mabl.ui.theme.MABLTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -103,13 +106,13 @@ class MainActivity : ComponentActivity() {
                         runOnUiThread {
                             val responseText = response.text ?: "No response text"
                             conversationState.value += "MABL: $responseText\n"
-                            
+
                             if (response.toolCalls.isNotEmpty()) {
                                 response.toolCalls.forEach { toolCall ->
                                     conversationState.value += "TOOL_CALL: ${toolCall.name}, parameters: ${toolCall.parameters}\n"
                                 }
                             }
-                            
+
                             ttsService?.speak(responseText, object : ITtsCallback.Stub() {
                                 override fun onSpeechStarted() {}
                                 override fun onSpeechFinished() {}
@@ -153,47 +156,68 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (!bindService(
-                Intent(PluginConstants.ACTION_STT_SERVICE).apply {
-                    setPackage("com.penumbraos.plugins.demo")
-                },
-                sttConnection,
-                BIND_AUTO_CREATE
-            )
-        ) {
-            Log.e("MainActivity", "Could not set up binding for STT service")
-        }
+    override fun onResume() {
+        super.onResume()
 
-        if (!bindService(
-                Intent(PluginConstants.ACTION_TTS_SERVICE).apply {
-                    setPackage("com.penumbraos.plugins.demo")
-                },
-                ttsConnection,
-                BIND_AUTO_CREATE
-            )
-        ) {
-            Log.e("MainActivity", "Could not set up binding for TTS service")
-        }
+        lifecycleScope.launch {
+            delay(2000)
+            val sttIntent = Intent(PluginConstants.ACTION_STT_SERVICE).apply {
+                setPackage("com.penumbraos.plugins.demo")
+            }
 
-        if (!bindService(
-                Intent(PluginConstants.ACTION_LLM_SERVICE).apply {
-                    setPackage("com.penumbraos.plugins.demo")
-                },
-                llmConnection,
-                BIND_AUTO_CREATE
-            )
-        ) {
-            Log.e("MainActivity", "Could not set up binding for LLM service")
+            val ttsIntent = Intent(PluginConstants.ACTION_TTS_SERVICE).apply {
+                setPackage("com.penumbraos.plugins.demo")
+            }
+
+            val llmIntent = Intent(PluginConstants.ACTION_LLM_SERVICE).apply {
+                setPackage("com.penumbraos.plugins.demo")
+            }
+
+            // Force services to be active using foreground service
+            startForegroundService(sttIntent)
+            startForegroundService(ttsIntent)
+            startForegroundService(llmIntent)
+
+            if (!bindService(
+                    sttIntent,
+                    sttConnection,
+                    BIND_AUTO_CREATE
+                )
+            ) {
+                Log.e("MainActivity", "Could not set up binding for STT service")
+            }
+
+            if (!bindService(
+                    ttsIntent,
+                    ttsConnection,
+                    BIND_AUTO_CREATE
+                )
+            ) {
+                Log.e("MainActivity", "Could not set up binding for TTS service")
+            }
+
+            if (!bindService(
+                    llmIntent,
+                    llmConnection,
+                    BIND_AUTO_CREATE
+                )
+            ) {
+                Log.e("MainActivity", "Could not set up binding for LLM service")
+            }
         }
     }
 
     override fun onStop() {
         super.onStop()
-        unbindService(sttConnection)
-        unbindService(ttsConnection)
-        unbindService(llmConnection)
+        if (sttService != null) {
+            unbindService(sttConnection)
+        }
+        if (ttsService != null) {
+            unbindService(ttsConnection)
+        }
+        if (llmService != null) {
+            unbindService(llmConnection)
+        }
     }
 }
 
