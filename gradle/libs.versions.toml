@@ -12,7 +12,7 @@ appcompat = "1.7.1"
 material = "1.12.0"
 penumbraos-sdk = "ab9328b"
 penumbraos-sdk-local = "0.1.0"
-smolchat = "v9"
+smollm = "a2ff1e7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,7 +33,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
 #penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
-smolchat = { group = "com.github.shubham0204", name = "SmolChat-Android", version.ref = "smolchat" }
+smollm = { group = "com.github.shubham0204.SmolChat-Android", name = "smollm", version.ref = "smollm" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

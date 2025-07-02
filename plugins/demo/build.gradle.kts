@@ -34,6 +34,7 @@ dependencies {
 
     implementation(libs.penumbraos.sdk)
 
+    implementation(libs.smollm)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
