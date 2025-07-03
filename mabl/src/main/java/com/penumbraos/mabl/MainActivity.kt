@@ -8,6 +8,8 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.InputEvent
+import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -50,7 +52,8 @@ import com.penumbraos.mabl.sdk.ITtsService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.PluginConstants
 import com.penumbraos.mabl.ui.theme.MABLTheme
-import kotlinx.coroutines.delay
+import com.penumbraos.sdk.PenumbraClient
+import com.penumbraos.sdk.api.types.TouchpadInputReceiver
 import kotlinx.coroutines.launch
 
 
@@ -102,7 +105,11 @@ class MainActivity : ComponentActivity() {
             runOnUiThread {
                 conversationState.value += "You: $finalText\n"
                 llmService?.generateResponse(finalText, object : ILlmCallback.Stub() {
-                    override fun onResponse(response: LlmResponse) {
+                    override fun onPartialResponse(newToken: String) {
+                        Log.i("MainActivity", "LLM partial response: $newToken")
+                    }
+
+                    override fun onCompleteResponse(response: LlmResponse) {
                         runOnUiThread {
                             val responseText = response.text ?: "No response text"
                             conversationState.value += "MABL: $responseText\n"
@@ -123,6 +130,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             })
                         }
+                    }
+
+                    override fun onError(error: String) {
+                        Log.w("MainActivity", "LLM error: $error")
                     }
                 })
             }
@@ -160,7 +171,6 @@ class MainActivity : ComponentActivity() {
         super.onResume()
 
         lifecycleScope.launch {
-            delay(2000)
             val sttIntent = Intent(PluginConstants.ACTION_STT_SERVICE).apply {
                 setPackage("com.penumbraos.plugins.demo")
             }
@@ -204,6 +214,18 @@ class MainActivity : ComponentActivity() {
             ) {
                 Log.e("MainActivity", "Could not set up binding for LLM service")
             }
+
+            val client = PenumbraClient(applicationContext, true)
+            client.waitForBridge()
+            client.touchpad.register(object : TouchpadInputReceiver {
+                override fun onInputEvent(event: InputEvent) {
+                    val event = event as MotionEvent
+                    if (event.action == MotionEvent.ACTION_UP && event.eventTime - event.downTime < 200) {
+                        Log.w("MainActivity", "Single touchpad tap detected")
+                        sttService?.startListening(sttCallback)
+                    }
+                }
+            })
         }
     }
 
