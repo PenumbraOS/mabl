@@ -72,6 +72,11 @@ class DemoSttService : Service() {
                             }
                         }
                 }
+
+                override fun onEndOfSpeech() {
+                    Log.i("DemoSttService", "End of speech. Stopping STT")
+                    client.stt.stopListening()
+                }
             })
         }
     }
