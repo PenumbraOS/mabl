@@ -16,15 +16,47 @@ import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.ITtsCallback
 import com.penumbraos.mabl.sdk.ITtsService
 import java.util.Locale
+import java.util.TimerTask
+import kotlin.concurrent.timerTask
+
+private const val UTTERANCE_ID = "mabl_demo_utterance"
 
 class DemoTtsService : Service(), TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
     private var currentCallback: ITtsCallback? = null
 
+    private var utteranceAccumulator = ""
+    private var utteranceTimer: TimerTask? = null
+
     private val binder = object : ITtsService.Stub() {
-        override fun speak(text: String, callback: ITtsCallback) {
+        override fun registerCallback(callback: ITtsCallback) {
             currentCallback = callback
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "mabl_utterance")
+        }
+
+        override fun speakImmediately(text: String) {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        }
+
+        override fun speakIncremental(text: String) {
+            utteranceAccumulator += text
+
+            if (text.contains(Regex("[.,?!:;()]"))) {
+                // Contains punctuation, consider this a pause
+                Log.i("DemoTtsService", "Punctuation detected $utteranceAccumulator")
+                flushAccumulator()
+            } else if (utteranceTimer == null) {
+                utteranceTimer = timerTask {
+                    Log.i("DemoTtsService", "Timer triggered $utteranceAccumulator")
+                    flushAccumulator()
+                }
+            }
+        }
+
+        fun flushAccumulator() {
+            utteranceTimer?.cancel()
+            utteranceTimer = null
+            tts?.speak(utteranceAccumulator, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
+            utteranceAccumulator = ""
         }
     }
 

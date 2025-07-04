@@ -75,6 +75,15 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d("MainActivity", "onServiceConnected: tts")
             ttsService = ITtsService.Stub.asInterface(service)
+            ttsService?.registerCallback(object : ITtsCallback.Stub() {
+                override fun onSpeechStarted() {}
+                override fun onSpeechFinished() {}
+                override fun onError(errorMessage: String) {
+                    runOnUiThread {
+                        conversationState.value += "TTS Error: $errorMessage\n"
+                    }
+                }
+            })
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -104,9 +113,11 @@ class MainActivity : ComponentActivity() {
         override fun onFinalTranscription(finalText: String) {
             runOnUiThread {
                 conversationState.value += "You: $finalText\n"
-                llmService?.generateResponse(finalText, object : ILlmCallback.Stub() {
+                llmService?.generateResponse("$finalText /no_think", object : ILlmCallback.Stub() {
                     override fun onPartialResponse(newToken: String) {
                         Log.i("MainActivity", "LLM partial response: $newToken")
+
+                        ttsService?.speakIncremental(newToken)
                     }
 
                     override fun onCompleteResponse(response: LlmResponse) {
@@ -119,16 +130,6 @@ class MainActivity : ComponentActivity() {
                                     conversationState.value += "TOOL_CALL: ${toolCall.name}, parameters: ${toolCall.parameters}\n"
                                 }
                             }
-
-                            ttsService?.speak(responseText, object : ITtsCallback.Stub() {
-                                override fun onSpeechStarted() {}
-                                override fun onSpeechFinished() {}
-                                override fun onError(errorMessage: String) {
-                                    runOnUiThread {
-                                        conversationState.value += "TTS Error: $errorMessage\n"
-                                    }
-                                }
-                            })
                         }
                     }
 
