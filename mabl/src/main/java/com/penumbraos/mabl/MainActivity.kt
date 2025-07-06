@@ -55,6 +55,8 @@ import com.penumbraos.mabl.ui.theme.MABLTheme
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.types.TouchpadInputReceiver
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 
 class MainActivity : ComponentActivity() {
@@ -129,6 +131,20 @@ class MainActivity : ComponentActivity() {
 
                             if (response.toolCalls.isNotEmpty()) {
                                 response.toolCalls.forEach { toolCall ->
+                                    if (toolCall.name == "create_timer") {
+                                        try {
+                                            val parameters =
+                                                Json.decodeFromString<JsonObject>(toolCall.parameters)
+                                            val duration = parameters["duration"]
+                                            ttsService?.speakIncremental("Timer set for $duration")
+                                        } catch (e: Exception) {
+                                            Log.e(
+                                                "MainActivity",
+                                                "Error parsing tool call parameters",
+                                                e
+                                            )
+                                        }
+                                    }
                                     conversationState.value += "TOOL_CALL: ${toolCall.name}, parameters: ${toolCall.parameters}\n"
                                 }
                             }
