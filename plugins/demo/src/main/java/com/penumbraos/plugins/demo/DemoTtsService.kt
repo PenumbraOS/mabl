@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.ITtsCallback
 import com.penumbraos.mabl.sdk.ITtsService
 import java.util.Locale
-import java.util.TimerTask
+import java.util.Timer
 import kotlin.concurrent.timerTask
 
 private const val UTTERANCE_ID = "mabl_demo_utterance"
@@ -26,7 +26,7 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
     private var currentCallback: ITtsCallback? = null
 
     private var utteranceAccumulator = ""
-    private var utteranceTimer: TimerTask? = null
+    private var utteranceTimer: Timer? = null
 
     private val binder = object : ITtsService.Stub() {
         override fun registerCallback(callback: ITtsCallback) {
@@ -45,18 +45,12 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
                 Log.i("DemoTtsService", "Punctuation detected $utteranceAccumulator")
                 flushAccumulator()
             } else if (utteranceTimer == null) {
-                utteranceTimer = timerTask {
+                utteranceTimer = Timer()
+                utteranceTimer?.schedule(timerTask {
                     Log.i("DemoTtsService", "Timer triggered $utteranceAccumulator")
                     flushAccumulator()
-                }
+                }, 2000)
             }
-        }
-
-        fun flushAccumulator() {
-            utteranceTimer?.cancel()
-            utteranceTimer = null
-            tts?.speak(utteranceAccumulator, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
-            utteranceAccumulator = ""
         }
     }
 
@@ -110,6 +104,13 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
 
     override fun onBind(intent: Intent): IBinder {
         return binder
+    }
+
+    private fun flushAccumulator() {
+        utteranceTimer?.cancel()
+        utteranceTimer = null
+        tts?.speak(utteranceAccumulator, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
+        utteranceAccumulator = ""
     }
 
     private fun createNotificationChannel() {

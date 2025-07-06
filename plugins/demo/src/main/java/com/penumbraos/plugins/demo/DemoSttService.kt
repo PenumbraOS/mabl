@@ -20,12 +20,17 @@ import com.penumbraos.sdk.api.types.SttRecognitionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Timer
+import kotlin.concurrent.timerTask
 
 class DemoSttService : Service() {
     private var currentCallback: ISttCallback? = null
     private val scope = CoroutineScope(Dispatchers.IO)
 
     private lateinit var client: PenumbraClient
+
+    private var utteranceTimer: Timer? = null
+
 
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
@@ -55,6 +60,8 @@ class DemoSttService : Service() {
                     results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let {
                             try {
+                                utteranceTimer?.cancel()
+                                utteranceTimer = null
                                 currentCallback?.onFinalTranscription(it)
                             } catch (e: RemoteException) {
                                 Log.e("DemoSttService", "Callback error", e)
@@ -66,6 +73,7 @@ class DemoSttService : Service() {
                     partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let {
                             try {
+                                updateUtteranceCompletionTimer()
                                 currentCallback?.onPartialTranscription(it)
                             } catch (e: RemoteException) {
                                 Log.e("DemoSttService", "Callback error", e)
@@ -101,6 +109,15 @@ class DemoSttService : Service() {
 
     override fun onBind(intent: Intent): IBinder {
         return binder
+    }
+
+    private fun updateUtteranceCompletionTimer() {
+        utteranceTimer?.cancel()
+        utteranceTimer = Timer()
+        utteranceTimer?.schedule(timerTask {
+            Log.i("DemoSttService", "Timing out waiting for more utterances")
+            client.stt.stopListening()
+        }, 500)
     }
 
     private fun createNotificationChannel() {
