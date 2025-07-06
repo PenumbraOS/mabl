@@ -10,9 +10,13 @@ activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 appcompat = "1.7.1"
 material = "1.12.0"
-penumbraos-sdk = "ab9328b"
+penumbraos-sdk = "7f1a7cb"
 penumbraos-sdk-local = "0.1.0"
 smollm = "a2ff1e7"
+openai-client = "4.0.1"
+ktor-client = "3.0.0"
+kotlinx-serialization = "1.7.1"
+kotlinx-coroutines = "1.8.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,10 +38,15 @@ material = { group = "com.google.android.material", name = "material", version.r
 penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
 #penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
 smollm = { group = "com.github.shubham0204.SmolChat-Android", name = "smollm", version.ref = "smollm" }
+openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
+ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/mabl" />
             <option value="$PROJECT_DIR$/plugins" />
             <option value="$PROJECT_DIR$/plugins/demo" />
+            <option value="$PROJECT_DIR$/plugins/openai" />
             <option value="$PROJECT_DIR$/sdk" />
           </set>
         </option>

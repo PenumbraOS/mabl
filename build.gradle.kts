@@ -29,4 +29,25 @@ tasks {
 
         dependsOn(":plugins:demo:assembleDebug")
     }
+    /**
+     * Gradle task to install the OpenAI plugin's APK onto connected devices.
+     * Requires 'adb' to be in the system's PATH or specified with a full path
+     */
+    register<Exec>("installOpenAiPlugin") {
+        description = "Installs the OpenAI plugin's APK on connected device(s) using adb"
+        group = "install"
+
+        val serviceProject = project(":plugins:openai")
+
+        val serviceApkPath =
+            "${serviceProject.buildDir}/outputs/apk/debug/${serviceProject.name}-debug.apk"
+
+        commandLine("bash", "-c", "adb install -r $serviceApkPath")
+
+        onlyIf {
+            File(serviceApkPath).exists()
+        }
+
+        dependsOn(":plugins:openai:assembleDebug")
+    }
 }

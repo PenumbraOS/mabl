@@ -106,12 +106,14 @@ class MainActivity : ComponentActivity() {
     private val sttCallback = object : ISttCallback.Stub() {
         override fun onPartialTranscription(partialText: String) {
             runOnUiThread {
+                Log.i("MainActivity", "STT partial transcription: $partialText")
                 transcriptionState.value = partialText
             }
         }
 
         override fun onFinalTranscription(finalText: String) {
             runOnUiThread {
+                Log.w("MainActivity", "LLM request: $finalText")
                 conversationState.value += "You: $finalText\n"
                 llmService?.generateResponse("$finalText /no_think", object : ILlmCallback.Stub() {
                     override fun onPartialResponse(newToken: String) {
@@ -181,7 +183,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val llmIntent = Intent(PluginConstants.ACTION_LLM_SERVICE).apply {
-                setPackage("com.penumbraos.plugins.demo")
+                setPackage("com.penumbraos.plugins.openai")
             }
 
             // Force services to be active using foreground service
