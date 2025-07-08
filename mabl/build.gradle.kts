@@ -32,11 +32,25 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    
+    flavorDimensions += "device"
+    productFlavors {
+        create("aipin") {
+            dimension = "device"
+            buildConfigField("boolean", "IS_AI_PIN", "true")
+        }
+        create("android") {
+            dimension = "device"
+            buildConfigField("boolean", "IS_AI_PIN", "false")
+        }
     }
 }
 
 dependencies {
     implementation(project(":sdk"))
+    implementation(project(":ui"))
     implementation(libs.penumbraos.sdk)
 
     implementation(libs.kotlinx.serialization.json)

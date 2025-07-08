@@ -125,13 +125,15 @@ class OpenAiLlmService : Service() {
                         }
                     }.collect()
 
-                    Log.d(TAG, "Streaming completed, message count: $messageCount")
-
                     // Send final response
                     val response = LlmResponse().apply {
                         text = responseBuilder.toString()
                         this.toolCalls = toolCalls.toTypedArray()
                     }
+                    Log.d(
+                        TAG,
+                        "Streaming completed, message count: $messageCount, response: $response"
+                    )
                     callback.onCompleteResponse(response)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error generating response", e)

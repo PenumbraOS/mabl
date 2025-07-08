@@ -49,7 +49,7 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
                 utteranceTimer?.schedule(timerTask {
                     Log.i("DemoTtsService", "Timer triggered $utteranceAccumulator")
                     flushAccumulator()
-                }, 2000)
+                }, 500)
             }
         }
     }
