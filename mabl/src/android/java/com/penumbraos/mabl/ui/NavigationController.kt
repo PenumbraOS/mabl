@@ -1,10 +1,10 @@
-package com.penumbraos.mabl.ui.android
+package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import com.penumbraos.mabl.ui.interfaces.NavigationController
+import com.penumbraos.mabl.ui.interfaces.INavigationController
 
 enum class AndroidScreen {
     CONVERSATION,
@@ -12,12 +12,11 @@ enum class AndroidScreen {
     SETTINGS
 }
 
-class AndroidNavigationController(
+private const val TAG = "AndroidNavigationController"
+
+class NavigationController(
     private val context: Context
-) : NavigationController {
-
-    private val TAG = "AndroidNavigationController"
-
+) : INavigationController {
     // Compose state for navigation
     val currentScreen: MutableState<AndroidScreen> = mutableStateOf(AndroidScreen.CONVERSATION)
 

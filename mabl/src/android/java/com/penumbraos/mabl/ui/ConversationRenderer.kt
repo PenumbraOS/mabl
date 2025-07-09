@@ -1,16 +1,16 @@
-package com.penumbraos.mabl.ui.android
+package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import com.penumbraos.mabl.ui.interfaces.ConversationRenderer
+import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 
-class AndroidConversationRenderer(
+private const val TAG = "AndroidConversationRenderer"
+
+class ConversationRenderer(
     private val context: Context,
-) : ConversationRenderer {
-
-    private val TAG = "AndroidConversationRenderer"
+) : IConversationRenderer {
 
     // Compose state for UI updates
     val conversationState: MutableState<String> = mutableStateOf("")

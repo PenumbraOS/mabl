@@ -1,15 +1,19 @@
-package com.penumbraos.mabl.ui.aipin
+package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.sdk.ISttCallback
-import com.penumbraos.mabl.ui.interfaces.InputHandler
+import com.penumbraos.mabl.sdk.ISttService
+import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
+import com.penumbraos.mabl.ui.interfaces.IInputHandler
 
-class AiPinInputHandler(
+private const val TAG = "AndroidInputHandler"
+
+class InputHandler(
     private val context: Context,
-) : InputHandler {
+) : IInputHandler {
 
-    private val TAG = "AiPinInputHandler"
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
     private var isListening = false
@@ -17,12 +21,10 @@ class AiPinInputHandler(
     private val sttCallback = object : ISttCallback.Stub() {
         override fun onPartialTranscription(partialText: String) {
             Log.d(TAG, "Partial transcription: $partialText")
-            // AI Pin: Could provide audio feedback for partial transcription
         }
 
         override fun onFinalTranscription(finalText: String) {
             Log.d(TAG, "Final transcription: $finalText")
-            voiceCallback?.invoke(finalText)
             isListening = false
         }
 
@@ -32,35 +34,45 @@ class AiPinInputHandler(
         }
     }
 
-    fun setupTouchpadInput() {
-        // Note: This is now handled in MainActivity
-        // This method is kept for interface compatibility
-        Log.d(TAG, "Touchpad input setup delegated to MainActivity")
+    override fun setup(
+        context: Context,
+        lifecycleScope: LifecycleCoroutineScope,
+        sttService: ISttService?,
+        sttCallback: ISttCallback,
+        conversationRenderer: IConversationRenderer
+    ) {
+        onVoiceInput { userInput ->
+            Log.d(TAG, "Voice input received: $userInput")
+            // This is handled by the STT callback
+        }
     }
 
     override fun onVoiceInput(callback: (String) -> Unit) {
         this.voiceCallback = callback
-        setupTouchpadInput()
+        Log.d(TAG, "Voice input callback registered")
     }
 
     override fun onTextInput(callback: (String) -> Unit) {
         this.textCallback = callback
-        // AI Pin: Text input not typically supported, but could use voice-to-text
-        Log.d(TAG, "Text input requested - using voice-to-text fallback")
-        onVoiceInput(callback)
+        Log.d(TAG, "Text input callback registered")
     }
 
     override fun startListening() {
         if (!isListening) {
-            Log.d(TAG, "Starting voice listening")
             isListening = true
         }
     }
 
     override fun stopListening() {
         if (isListening) {
-            Log.d(TAG, "Stopping voice listening")
             isListening = false
         }
     }
+
+    fun handleTextInput(text: String) {
+        Log.d(TAG, "Text input received: $text")
+        textCallback?.invoke(text)
+    }
+
+    fun isCurrentlyListening(): Boolean = isListening
 }

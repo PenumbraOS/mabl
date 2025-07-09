@@ -1,14 +1,14 @@
-package com.penumbraos.mabl.ui.aipin
+package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
-import com.penumbraos.mabl.ui.interfaces.ConversationRenderer
+import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 
-class AiPinConversationRenderer(
+private const val TAG = "AiPinConversationRenderer"
+
+class ConversationRenderer(
     private val context: Context,
-) : ConversationRenderer {
-
-    private val TAG = "AiPinConversationRenderer"
+) : IConversationRenderer {
 
     override fun showMessage(message: String, isUser: Boolean) {
         Log.d(TAG, "Message: $message (isUser: $isUser)")

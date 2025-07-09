@@ -34,15 +34,22 @@ android {
         compose = true
         buildConfig = true
     }
-    
+
     flavorDimensions += "device"
     productFlavors {
         create("aipin") {
             dimension = "device"
+            applicationIdSuffix = ".pin"
+            buildConfigField("boolean", "IS_AI_PIN", "true")
+        }
+        create("aipinSimulator") {
+            dimension = "device"
+            applicationIdSuffix = ".pin-sim"
             buildConfigField("boolean", "IS_AI_PIN", "true")
         }
         create("android") {
             dimension = "device"
+            applicationIdSuffix = ".android"
             buildConfigField("boolean", "IS_AI_PIN", "false")
         }
     }

@@ -1,14 +1,14 @@
-package com.penumbraos.mabl.ui.aipin
+package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
-import com.penumbraos.mabl.ui.interfaces.NavigationController
+import com.penumbraos.mabl.ui.interfaces.INavigationController
 
-class AiPinNavigationController(
+private const val TAG = "AiPinNavigationController"
+
+class NavigationController(
     private val context: Context,
-) : NavigationController {
-
-    private val TAG = "AiPinNavigationController"
+) : INavigationController {
     private var currentScreen = "conversation"
 
     override fun navigateToConversation() {
