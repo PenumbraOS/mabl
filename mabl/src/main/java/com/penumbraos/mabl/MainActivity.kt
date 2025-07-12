@@ -15,6 +15,7 @@ import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.services.AllControllers
+import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.PlatformUI
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.UIFactory
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
 
                         override fun onError(error: String) {
                             Log.w("MainActivity", "LLM error: $error")
-                            uiComponents.conversationRenderer.showError(error)
+                            uiComponents.conversationRenderer.showError(Error.LlmError(error))
                         }
                     })
             }
@@ -94,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
         override fun onError(errorMessage: String) {
             runOnUiThread {
-                uiComponents.conversationRenderer.showError(errorMessage)
+                uiComponents.conversationRenderer.showError(Error.SttError(errorMessage))
             }
         }
     }
@@ -153,6 +154,7 @@ class MainActivity : ComponentActivity() {
     private fun initializeUIComponents() {
         val uiFactory = UIFactory(
             context = this,
+            controllers
         )
 
         uiComponents = uiFactory.createUIComponents()

@@ -4,12 +4,15 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import com.penumbraos.mabl.services.AllControllers
+import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 
 private const val TAG = "AndroidConversationRenderer"
 
 class ConversationRenderer(
     private val context: Context,
+    private val controllers: AllControllers
 ) : IConversationRenderer {
 
     // Compose state for UI updates
@@ -39,10 +42,9 @@ class ConversationRenderer(
         }
     }
 
-    override fun showError(error: String) {
-        Log.e(TAG, "Error: $error")
-        errorState.value = error
-        conversationState.value += "Error: $error\n"
+    override fun showError(error: Error) {
+        errorState.value = error.message
+        conversationState.value += "Error: ${error.message}\n"
     }
 
     override fun clearConversation() {
