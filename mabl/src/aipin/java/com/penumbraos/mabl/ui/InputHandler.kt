@@ -53,9 +53,12 @@ class InputHandler(
                 client.waitForBridge()
                 client.touchpad.register(object : TouchpadInputReceiver {
                     override fun onInputEvent(event: InputEvent) {
-                        val motionEvent = event as MotionEvent
-                        if (motionEvent.action == MotionEvent.ACTION_UP &&
-                            motionEvent.eventTime - motionEvent.downTime < 200
+                        if (event !is MotionEvent) {
+                            return
+                        }
+
+                        if (event.action == MotionEvent.ACTION_UP &&
+                            event.eventTime - event.downTime < 200
                         ) {
                             Log.w(TAG, "Single touchpad tap detected")
                             conversationRenderer.showListening(true)
