@@ -12,8 +12,11 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.aallam.openai.api.chat.*
 import com.aallam.openai.api.core.Parameters
+import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
+import com.aallam.openai.client.OpenAIHost
 import com.penumbraos.mabl.sdk.ILlmCallback
+import com.penumbraos.mabl.sdk.ILlmConfigCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.ToolCall
@@ -25,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 private const val TAG = "OpenAiLlmService"
 
@@ -32,7 +37,8 @@ class OpenAiLlmService : Service() {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
     private var openAI: OpenAI? = null
-    private lateinit var config: OpenAiConfig
+    private lateinit var configService: LlmConfigService
+    private var currentConfig: LlmConfiguration? = null
 
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
@@ -40,25 +46,39 @@ class OpenAiLlmService : Service() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
 
-        config = OpenAiConfig(this)
+        configService = LlmConfigService()
         val client = PenumbraClient(this, allowInitFailure = true)
 
         llmScope.launch {
             client.waitForBridge()
+            
+            // Load configuration from service
+            loadCurrentConfig()
+
+            if (currentConfig == null) {
+                Log.e(TAG, "No valid LLM configuration found")
+                return@launch
+            }
 
             try {
                 Log.d(TAG, "About to create OpenAI client")
+                val apiKey = currentConfig!!.apiKey
+                val baseUrl = currentConfig!!.baseUrl
+
                 openAI =
                     OpenAI(
-                        token = config.apiKey,
-//                        host = OpenAIHost("[SOMEURL]"),
+                        token = apiKey,
+                        host = OpenAIHost(baseUrl),
                         httpClientConfig = {
                             install(HttpClientPlugin) {
                                 penumbraClient = client
                             }
                         }
                     )
-                Log.d(TAG, "OpenAI client initialized successfully with model: ${config.model.id}")
+                Log.d(
+                    TAG,
+                    "OpenAI client initialized successfully with model: ${currentConfig!!.model}"
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize OpenAI client", e)
             }
@@ -80,7 +100,8 @@ class OpenAiLlmService : Service() {
                     val chatMessages = listOf(
                         ChatMessage(
                             role = ChatRole.System,
-                            content = config.systemPrompt
+                            content = currentConfig?.systemPrompt
+                                ?: "You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point."
                         ),
                         ChatMessage(
                             role = ChatRole.User,
@@ -88,11 +109,15 @@ class OpenAiLlmService : Service() {
                         )
                     )
 
+                    val model = ModelId(currentConfig?.model ?: "gemini-2.5-flash")
+                    val maxTokens = currentConfig?.maxTokens ?: 1000
+                    val temperature = currentConfig?.temperature ?: 0.7
+
                     val chatCompletionRequest = ChatCompletionRequest(
-                        model = config.model,
+                        model = model,
                         messages = chatMessages,
-                        maxTokens = config.maxTokens,
-                        temperature = config.temperature,
+                        maxTokens = maxTokens,
+                        temperature = temperature,
                         tools = getAvailableTools()
                     )
 
@@ -191,6 +216,39 @@ class OpenAiLlmService : Service() {
                 )
             )
         )
+    }
+
+    private suspend fun loadCurrentConfig() {
+        try {
+            val configNames = suspendCancellableCoroutine<Array<String>> { continuation ->
+                configService.getAvailableConfigs(object : ILlmConfigCallback.Stub() {
+                    override fun onConfigsLoaded(configs: Array<out String?>?) {
+                        val nonNullConfigs = configs?.filterNotNull()?.toTypedArray() ?: emptyArray()
+                        continuation.resume(nonNullConfigs)
+                    }
+
+                    override fun onError(error: String?) {
+                        Log.e(TAG, "Error loading configurations: $error")
+                        continuation.resume(emptyArray())
+                    }
+                })
+            }
+            
+            // Get the first config by name if available
+            currentConfig = if (configNames.isNotEmpty()) {
+                configService.getConfigByName(configNames.first())
+            } else {
+                null
+            }
+            
+            Log.d(
+                TAG,
+                "Loaded configuration: ${currentConfig?.name ?: "no configuration found, using defaults"}"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load configuration", e)
+            currentConfig = null
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
