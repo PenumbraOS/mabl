@@ -5,18 +5,21 @@ import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
 import com.penumbraos.mabl.ui.interfaces.INavigationController
+import kotlinx.coroutines.CoroutineScope
 
 class UIFactory(
+    coroutineScope: CoroutineScope,
     private val context: Context,
-    private val controllers: AllControllers
+    private val controllers: AllControllers,
 ) {
+    private val statusBroadcaster = MABLStatusBroadcaster(context, coroutineScope)
 
     fun createConversationRenderer(): IConversationRenderer {
-        return ConversationRenderer(context, controllers)
+        return ConversationRenderer(context, controllers, statusBroadcaster)
     }
 
     fun createInputHandler(): IInputHandler {
-        return InputHandler(context)
+        return InputHandler(context, statusBroadcaster)
     }
 
     fun createNavigationController(): INavigationController {

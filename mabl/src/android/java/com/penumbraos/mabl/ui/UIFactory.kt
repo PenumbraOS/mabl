@@ -7,6 +7,7 @@ import com.penumbraos.mabl.ui.interfaces.IInputHandler
 import com.penumbraos.mabl.ui.interfaces.INavigationController
 
 class UIFactory(
+    coroutineScope: CoroutineScope,
     private val context: Context,
     private val controllers: AllControllers
 ) {

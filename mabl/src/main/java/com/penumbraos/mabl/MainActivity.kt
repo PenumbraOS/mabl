@@ -153,8 +153,9 @@ class MainActivity : ComponentActivity() {
 
     private fun initializeUIComponents() {
         val uiFactory = UIFactory(
+            lifecycleScope,
             context = this,
-            controllers
+            controllers,
         )
 
         uiComponents = uiFactory.createUIComponents()

@@ -17,6 +17,7 @@ private const val TAG = "AiPinInputHandler"
 
 class InputHandler(
     private val context: Context,
+    private val statusBroadcaster: MABLStatusBroadcaster? = null
 ) : IInputHandler {
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
@@ -38,6 +39,8 @@ class InputHandler(
         override fun onError(errorMessage: String) {
             Log.e(TAG, "STT Error: $errorMessage")
             isListening = false
+
+            statusBroadcaster?.sendSTTErrorEvent(errorMessage, "inputHandler")
         }
     }
 
@@ -51,6 +54,7 @@ class InputHandler(
         try {
             lifecycleScope.launch {
                 client.waitForBridge()
+
                 client.touchpad.register(object : TouchpadInputReceiver {
                     override fun onInputEvent(event: InputEvent) {
                         if (event !is MotionEvent) {
@@ -61,6 +65,12 @@ class InputHandler(
                             event.eventTime - event.downTime < 200
                         ) {
                             Log.w(TAG, "Single touchpad tap detected")
+
+                            statusBroadcaster?.sendTouchpadTapEvent(
+                                "single", 
+                                (event.eventTime - event.downTime).toInt()
+                            )
+
                             conversationRenderer.showListening(true)
                             sttService?.startListening(sttCallback)
                         }
