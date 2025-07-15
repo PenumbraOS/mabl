@@ -12,9 +12,9 @@ import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.IToolService
 import com.penumbraos.mabl.sdk.ToolCall
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.penumbraos.mabl.sdk.ToolDefinition
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 private const val TAG = "TimeToolService"
 
@@ -28,9 +28,18 @@ class TimeToolService : Service() {
 
             when (call.name) {
                 GET_CURRENT_TIME_TOOL -> {
-                    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    val currentTime = formatter.format(Date())
-                    callback.onSuccess("Current time: $currentTime")
+                    val now = ZonedDateTime.now()
+                    val isoFormat = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                    val timezone = now.zone.toString()
+
+                    val result = """
+                        {
+                            "datetime_iso": "$isoFormat",
+                            "timezone": "$timezone"
+                        }
+                    """.trimIndent()
+
+                    callback.onSuccess(result)
                 }
 
                 else -> {
@@ -39,9 +48,9 @@ class TimeToolService : Service() {
             }
         }
 
-        override fun getToolDefinitions(): Array<com.penumbraos.mabl.sdk.ToolDefinition> {
+        override fun getToolDefinitions(): Array<ToolDefinition> {
             return arrayOf(
-                com.penumbraos.mabl.sdk.ToolDefinition().apply {
+                ToolDefinition().apply {
                     name = GET_CURRENT_TIME_TOOL
                     description = "Get the current date and time"
                     parameters = emptyArray()

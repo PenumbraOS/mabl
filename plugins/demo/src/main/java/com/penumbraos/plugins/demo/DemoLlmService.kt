@@ -51,12 +51,23 @@ class DemoLlmService : Service() {
             Log.d(TAG, "Received ${tools.size} tool definitions (ignored)")
         }
         
-        override fun generateResponse(prompt: String, callback: ILlmCallback) {
-            Log.d(TAG, "Received prompt: $prompt")
+        override fun generateResponse(messages: Array<com.penumbraos.mabl.sdk.ConversationMessage>, callback: ILlmCallback) {
+            Log.d(TAG, "Received ${messages.size} conversation messages")
 
             if (smolLM == null) {
                 Log.e(TAG, "LLM not loaded")
+                callback.onError("LLM not loaded")
                 return
+            }
+
+            // Convert conversation messages to a simple prompt
+            val prompt = messages.joinToString("\n") { message ->
+                when (message.type) {
+                    "user" -> "User: ${message.content}"
+                    "assistant" -> "Assistant: ${message.content}"
+                    "tool" -> "Tool Result: ${message.content}"
+                    else -> message.content
+                }
             }
 
             llmScope.launch {

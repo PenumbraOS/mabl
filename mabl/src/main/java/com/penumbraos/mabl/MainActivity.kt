@@ -42,65 +42,36 @@ class MainActivity : ComponentActivity() {
                 uiComponents.conversationRenderer.showMessage(finalText, isUser = true)
                 uiComponents.conversationRenderer.showListening(false)
 
-                controllers.llm.service?.generateResponse(
+                val conversationManager = com.penumbraos.mabl.conversation.ConversationManager(
+                    controllers.llm.service!!,
+                    controllers.toolOrchestrator
+                )
+                
+                conversationManager.processUserMessage(
                     "$finalText /no_think",
-                    object : ILlmCallback.Stub() {
+                    object : com.penumbraos.mabl.conversation.ConversationManager.ConversationCallback {
                         override fun onPartialResponse(newToken: String) {
                             Log.i("MainActivity", "LLM partial response: $newToken")
                             controllers.tts.service?.speakIncremental(newToken)
                         }
 
-                        override fun onCompleteResponse(response: LlmResponse) {
+                        override fun onCompleteResponse(finalResponse: String) {
                             runOnUiThread {
-                                val responseText = response.text ?: "No response text"
                                 uiComponents.conversationRenderer.showMessage(
-                                    responseText,
+                                    finalResponse,
                                     isUser = false
                                 )
-
-                                if (response.toolCalls.isNotEmpty()) {
-                                    response.toolCalls.forEach { toolCall ->
-                                        uiComponents.conversationRenderer.showMessage(
-                                            "Executing tool: ${toolCall.name}",
-                                            isUser = false
-                                        )
-
-                                        controllers.toolOrchestrator.executeTool(
-                                            toolCall,
-                                            object : com.penumbraos.mabl.sdk.IToolCallback.Stub() {
-                                                override fun onSuccess(result: String) {
-                                                    runOnUiThread {
-                                                        uiComponents.conversationRenderer.showMessage(
-                                                            result,
-                                                            isUser = false
-                                                        )
-                                                        controllers.tts.service?.speakIncremental(
-                                                            result
-                                                        )
-                                                    }
-                                                }
-
-                                                override fun onError(error: String) {
-                                                    runOnUiThread {
-                                                        uiComponents.conversationRenderer.showMessage(
-                                                            "Tool error: $error",
-                                                            isUser = false
-                                                        )
-                                                        controllers.tts.service?.speakIncremental("Tool execution failed")
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
                             }
                         }
 
                         override fun onError(error: String) {
-                            Log.w("MainActivity", "LLM error: $error")
-                            uiComponents.conversationRenderer.showError(Error.LlmError(error))
+                            runOnUiThread {
+                                Log.w("MainActivity", "Conversation error: $error")
+                                uiComponents.conversationRenderer.showError(Error.LlmError(error))
+                            }
                         }
-                    })
+                    }
+                )
             }
         }
 

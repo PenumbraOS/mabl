@@ -15,11 +15,14 @@ import com.aallam.openai.api.core.Parameters
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIHost
+import com.penumbraos.mabl.sdk.ConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmConfigCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.ToolCall
+import com.penumbraos.mabl.sdk.ToolDefinition
+import com.penumbraos.mabl.sdk.ToolParameter
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.http.ktor.HttpClientPlugin
 import io.ktor.client.*
@@ -67,7 +70,7 @@ class OpenAiLlmService : Service() {
 
         llmScope.launch {
             client.waitForBridge()
-            
+
             // Load configuration from service
             loadCurrentConfig()
 
@@ -102,15 +105,18 @@ class OpenAiLlmService : Service() {
     }
 
     private var availableTools: List<Tool>? = null
-    
+
     private val binder = object : ILlmService.Stub() {
-        override fun setAvailableTools(tools: Array<com.penumbraos.mabl.sdk.ToolDefinition>) {
+        override fun setAvailableTools(tools: Array<ToolDefinition>) {
             Log.d(TAG, "Received ${tools.size} tool definitions")
             availableTools = convertToolDefinitionsToOpenAI(tools)
         }
-        
-        override fun generateResponse(prompt: String, callback: ILlmCallback) {
-            Log.d(TAG, "Received prompt: $prompt")
+
+        override fun generateResponse(
+            messages: Array<ConversationMessage>,
+            callback: ILlmCallback
+        ) {
+            Log.d(TAG, "Received ${messages.size} conversation messages")
 
             if (openAI == null) {
                 Log.e(TAG, "OpenAI client not initialized")
@@ -120,17 +126,51 @@ class OpenAiLlmService : Service() {
 
             llmScope.launch {
                 try {
+                    val conversationMessages = messages.map { message ->
+                        when (message.type) {
+                            "user" -> ChatMessage(
+                                role = ChatRole.User,
+                                content = message.content
+                            )
+
+                            "assistant" -> ChatMessage(
+                                role = ChatRole.Assistant,
+                                content = message.content,
+                                toolCalls = message.toolCalls?.map { toolCall ->
+                                    function {
+                                        id = ToolId(toolCall.id)
+                                        function = FunctionCall(
+                                            toolCall.name,
+                                            toolCall.parameters
+                                        )
+                                    }
+                                }
+                            )
+
+                            "tool" -> ChatMessage(
+                                role = ChatRole.Tool,
+                                content = message.content,
+                                toolCallId = message.toolCallId?.let {
+                                    ToolId(
+                                        it
+                                    )
+                                }
+                            )
+
+                            else -> ChatMessage(
+                                role = ChatRole.User,
+                                content = message.content
+                            )
+                        }
+                    }
+
                     val chatMessages = listOf(
                         ChatMessage(
                             role = ChatRole.System,
                             content = currentConfig?.systemPrompt
                                 ?: "You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point."
-                        ),
-                        ChatMessage(
-                            role = ChatRole.User,
-                            content = prompt
                         )
-                    )
+                    ) + conversationMessages
 
                     val model = ModelId(currentConfig?.model ?: "gemini-2.5-flash")
                     val maxTokens = currentConfig?.maxTokens ?: 1000
@@ -163,6 +203,7 @@ class OpenAiLlmService : Service() {
                                 delta.toolCalls?.forEach { toolCall ->
                                     if (toolCall.function != null) {
                                         val convertedToolCall = ToolCall().apply {
+                                            id = toolCall.id!!.id
                                             name = toolCall.function!!.name
                                             parameters = toolCall.function!!.arguments
                                         }
@@ -191,11 +232,11 @@ class OpenAiLlmService : Service() {
         }
     }
 
-    private fun convertToolDefinitionsToOpenAI(toolDefinitions: Array<com.penumbraos.mabl.sdk.ToolDefinition>): List<Tool>? {
+    private fun convertToolDefinitionsToOpenAI(toolDefinitions: Array<ToolDefinition>): List<Tool>? {
         if (toolDefinitions.isEmpty()) {
             return null
         }
-        
+
         return toolDefinitions.map { toolDef ->
             Tool.function(
                 name = toolDef.name,
@@ -204,8 +245,8 @@ class OpenAiLlmService : Service() {
             )
         }
     }
-    
-    private fun convertParametersToOpenAI(parameters: Array<com.penumbraos.mabl.sdk.ToolParameter>): Parameters {
+
+    private fun convertParametersToOpenAI(parameters: Array<ToolParameter>): Parameters {
         val properties = parameters.associate { param ->
             param.name to PropertySchema(
                 type = param.type,
@@ -213,15 +254,15 @@ class OpenAiLlmService : Service() {
                 enum = if (param.enumValues.isNotEmpty()) param.enumValues.toList() else null
             )
         }
-        
+
         val required = parameters.filter { it.required }.map { it.name }
-        
+
         val schema = ParameterSchema(
             type = "object",
             properties = properties,
             required = required
         )
-        
+
         return Parameters.fromJsonString(Json.encodeToString(ParameterSchema.serializer(), schema))
     }
 
@@ -230,7 +271,8 @@ class OpenAiLlmService : Service() {
             val configNames = suspendCancellableCoroutine<Array<String>> { continuation ->
                 configService.getAvailableConfigs(object : ILlmConfigCallback.Stub() {
                     override fun onConfigsLoaded(configs: Array<out String?>?) {
-                        val nonNullConfigs = configs?.filterNotNull()?.toTypedArray() ?: emptyArray()
+                        val nonNullConfigs =
+                            configs?.filterNotNull()?.toTypedArray() ?: emptyArray()
                         continuation.resume(nonNullConfigs)
                     }
 
@@ -240,14 +282,14 @@ class OpenAiLlmService : Service() {
                     }
                 })
             }
-            
+
             // Get the first config by name if available
             currentConfig = if (configNames.isNotEmpty()) {
                 configService.getConfigByName(configNames.first())
             } else {
                 null
             }
-            
+
             Log.d(
                 TAG,
                 "Loaded configuration: ${currentConfig?.name ?: "no configuration found, using defaults"}"
