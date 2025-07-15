@@ -1,4 +1,4 @@
-package com.penumbraos.plugins.demo
+package com.penumbraos.plugins.aipinsystem
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -84,7 +84,7 @@ class TimeToolService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("TimeToolService")
             .setContentText("Speech recognition service is running")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .build()
     }
 
