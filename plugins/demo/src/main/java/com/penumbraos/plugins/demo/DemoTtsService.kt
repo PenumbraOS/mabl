@@ -42,12 +42,12 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
 
             if (text.contains(Regex("[.,?!:;()]"))) {
                 // Contains punctuation, consider this a pause
-                Log.i("DemoTtsService", "Punctuation detected $utteranceAccumulator")
+                Log.i("DemoTtsService", "Punctuation detected. Speaking \"$utteranceAccumulator\"")
                 flushAccumulator()
             } else if (utteranceTimer == null) {
                 utteranceTimer = Timer()
                 utteranceTimer?.schedule(timerTask {
-                    Log.i("DemoTtsService", "Timer triggered $utteranceAccumulator")
+                    Log.i("DemoTtsService", "TTS timer triggered. Speaking \"$utteranceAccumulator\"")
                     flushAccumulator()
                 }, 500)
             }
