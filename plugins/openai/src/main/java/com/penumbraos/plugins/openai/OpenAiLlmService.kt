@@ -29,9 +29,25 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlin.coroutines.resume
 
 private const val TAG = "OpenAiLlmService"
+
+@Serializable
+data class ParameterSchema(
+    val type: String,
+    val properties: Map<String, PropertySchema> = emptyMap(),
+    val required: List<String> = emptyList()
+)
+
+@Serializable
+data class PropertySchema(
+    val type: String,
+    val description: String,
+    val enum: List<String>? = null
+)
 
 class OpenAiLlmService : Service() {
 
@@ -85,7 +101,14 @@ class OpenAiLlmService : Service() {
         }
     }
 
+    private var availableTools: List<Tool>? = null
+    
     private val binder = object : ILlmService.Stub() {
+        override fun setAvailableTools(tools: Array<com.penumbraos.mabl.sdk.ToolDefinition>) {
+            Log.d(TAG, "Received ${tools.size} tool definitions")
+            availableTools = convertToolDefinitionsToOpenAI(tools)
+        }
+        
         override fun generateResponse(prompt: String, callback: ILlmCallback) {
             Log.d(TAG, "Received prompt: $prompt")
 
@@ -118,7 +141,7 @@ class OpenAiLlmService : Service() {
                         messages = chatMessages,
                         maxTokens = maxTokens,
                         temperature = temperature,
-                        tools = getAvailableTools()
+                        tools = availableTools
                     )
 
                     val responseBuilder = StringBuilder()
@@ -168,54 +191,38 @@ class OpenAiLlmService : Service() {
         }
     }
 
-    private fun getAvailableTools(): List<Tool>? {
-        return listOf(
+    private fun convertToolDefinitionsToOpenAI(toolDefinitions: Array<com.penumbraos.mabl.sdk.ToolDefinition>): List<Tool>? {
+        if (toolDefinitions.isEmpty()) {
+            return null
+        }
+        
+        return toolDefinitions.map { toolDef ->
             Tool.function(
-                name = "get_current_weather",
-                description = "Get the current weather in a given location",
-                parameters = Parameters.fromJsonString(
-                    """
-                    {
-                        "type": "object",
-                        "properties": {
-                            "location": {
-                                "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA"
-                            },
-                            "unit": {
-                                "type": "string",
-                                "enum": ["celsius", "fahrenheit"],
-                                "description": "The unit of temperature"
-                            }
-                        },
-                        "required": ["location"]
-                    }
-                """.trimIndent()
-                )
-            ),
-            Tool.function(
-                name = "create_timer",
-                description = "Create a timer for a specified duration",
-                parameters = Parameters.fromJsonString(
-                    """
-                    {
-                        "type": "object",
-                        "properties": {
-                            "duration": {
-                                "type": "string",
-                                "description": "The duration of the timer (e.g., '5 minutes', '1 hour')"
-                            },
-                            "label": {
-                                "type": "string",
-                                "description": "Optional label for the timer"
-                            }
-                        },
-                        "required": ["duration"]
-                    }
-                """.trimIndent()
-                )
+                name = toolDef.name,
+                description = toolDef.description,
+                parameters = convertParametersToOpenAI(toolDef.parameters)
             )
+        }
+    }
+    
+    private fun convertParametersToOpenAI(parameters: Array<com.penumbraos.mabl.sdk.ToolParameter>): Parameters {
+        val properties = parameters.associate { param ->
+            param.name to PropertySchema(
+                type = param.type,
+                description = param.description,
+                enum = if (param.enumValues.isNotEmpty()) param.enumValues.toList() else null
+            )
+        }
+        
+        val required = parameters.filter { it.required }.map { it.name }
+        
+        val schema = ParameterSchema(
+            type = "object",
+            properties = properties,
+            required = required
         )
+        
+        return Parameters.fromJsonString(Json.encodeToString(ParameterSchema.serializer(), schema))
     }
 
     private suspend fun loadCurrentConfig() {

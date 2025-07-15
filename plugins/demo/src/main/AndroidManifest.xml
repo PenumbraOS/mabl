@@ -47,6 +47,23 @@
                 android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
                 android:value="Sample language model service" />
         </service>
+
+        <service
+            android:name=".TimeToolService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.TOOL_SERVICE" />
+            </intent-filter>
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Time Tool Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="Tool that provides current time" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.TOOLS"
+                android:value="get_current_time" />
+        </service>
     </application>
 
 </manifest>

@@ -46,6 +46,11 @@ class DemoLlmService : Service() {
     }
 
     private val binder = object : ILlmService.Stub() {
+        override fun setAvailableTools(tools: Array<com.penumbraos.mabl.sdk.ToolDefinition>) {
+            // Demo LLM service doesn't use tools, so we can ignore this
+            Log.d(TAG, "Received ${tools.size} tool definitions (ignored)")
+        }
+        
         override fun generateResponse(prompt: String, callback: ILlmCallback) {
             Log.d(TAG, "Received prompt: $prompt")
 

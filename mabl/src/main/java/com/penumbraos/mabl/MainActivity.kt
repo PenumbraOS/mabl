@@ -21,8 +21,6 @@ import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.UIFactory
 import com.penumbraos.mabl.ui.theme.MABLTheme
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 
 
 class MainActivity : ComponentActivity() {
@@ -62,23 +60,36 @@ class MainActivity : ComponentActivity() {
 
                                 if (response.toolCalls.isNotEmpty()) {
                                     response.toolCalls.forEach { toolCall ->
-                                        if (toolCall.name == "create_timer") {
-                                            try {
-                                                val parameters =
-                                                    Json.decodeFromString<JsonObject>(toolCall.parameters)
-                                                val duration = parameters["duration"]
-                                                controllers.tts.service?.speakIncremental("Timer set for $duration")
-                                            } catch (e: Exception) {
-                                                Log.e(
-                                                    "MainActivity",
-                                                    "Error parsing tool call parameters",
-                                                    e
-                                                )
-                                            }
-                                        }
                                         uiComponents.conversationRenderer.showMessage(
-                                            "TOOL_CALL: ${toolCall.name}, parameters: ${toolCall.parameters}",
+                                            "Executing tool: ${toolCall.name}",
                                             isUser = false
+                                        )
+
+                                        controllers.toolOrchestrator.executeTool(
+                                            toolCall,
+                                            object : com.penumbraos.mabl.sdk.IToolCallback.Stub() {
+                                                override fun onSuccess(result: String) {
+                                                    runOnUiThread {
+                                                        uiComponents.conversationRenderer.showMessage(
+                                                            result,
+                                                            isUser = false
+                                                        )
+                                                        controllers.tts.service?.speakIncremental(
+                                                            result
+                                                        )
+                                                    }
+                                                }
+
+                                                override fun onError(error: String) {
+                                                    runOnUiThread {
+                                                        uiComponents.conversationRenderer.showMessage(
+                                                            "Tool error: $error",
+                                                            isUser = false
+                                                        )
+                                                        controllers.tts.service?.speakIncremental("Tool execution failed")
+                                                    }
+                                                }
+                                            }
                                         )
                                     }
                                 }
@@ -103,7 +114,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        controllers.initialize()
+        controllers.initialize(this)
 
         enableEdgeToEdge()
 
@@ -146,8 +157,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
         controllers.shutdown(this)
     }
 
