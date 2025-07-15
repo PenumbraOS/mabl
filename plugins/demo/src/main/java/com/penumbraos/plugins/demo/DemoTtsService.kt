@@ -42,13 +42,25 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
 
             if (text.contains(Regex("[.,?!:;()]"))) {
                 // Contains punctuation, consider this a pause
-                Log.i("DemoTtsService", "Punctuation detected. Speaking \"$utteranceAccumulator\"")
-                flushAccumulator()
+                val utterance = utteranceAccumulator.trim()
+                if (utterance.isNotEmpty()) {
+                    Log.i(
+                        "DemoTtsService",
+                        "Punctuation detected. Speaking \"$utterance\""
+                    )
+                    flushAccumulator()
+                }
             } else if (utteranceTimer == null) {
                 utteranceTimer = Timer()
                 utteranceTimer?.schedule(timerTask {
-                    Log.i("DemoTtsService", "TTS timer triggered. Speaking \"$utteranceAccumulator\"")
-                    flushAccumulator()
+                    val utterance = utteranceAccumulator.trim()
+                    if (utterance.isNotEmpty()) {
+                        Log.i(
+                            "DemoTtsService",
+                            "TTS timer triggered. Speaking \"$utterance\""
+                        )
+                        flushAccumulator()
+                    }
                 }, 500)
             }
         }
@@ -109,7 +121,7 @@ class DemoTtsService : Service(), TextToSpeech.OnInitListener {
     private fun flushAccumulator() {
         utteranceTimer?.cancel()
         utteranceTimer = null
-        tts?.speak(utteranceAccumulator, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
+        tts?.speak(utteranceAccumulator.trim(), TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
         utteranceAccumulator = ""
     }
 
