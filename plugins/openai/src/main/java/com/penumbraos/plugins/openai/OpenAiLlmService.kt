@@ -167,20 +167,16 @@ class OpenAiLlmService : Service() {
                     val chatMessages = listOf(
                         ChatMessage(
                             role = ChatRole.System,
-                            content = currentConfig?.systemPrompt
+                            content = currentConfig!!.systemPrompt
                                 ?: "You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point."
                         )
                     ) + conversationMessages
-
-                    val model = ModelId(currentConfig?.model ?: "gemini-2.5-flash")
-                    val maxTokens = currentConfig?.maxTokens ?: 1000
-                    val temperature = currentConfig?.temperature ?: 0.7
-
+                    
                     val chatCompletionRequest = ChatCompletionRequest(
-                        model = model,
+                        model = ModelId(currentConfig!!.model),
                         messages = chatMessages,
-                        maxTokens = maxTokens,
-                        temperature = temperature,
+                        maxTokens = currentConfig!!.maxTokens,
+                        temperature = currentConfig!!.temperature,
                         tools = availableTools
                     )
 
@@ -199,7 +195,6 @@ class OpenAiLlmService : Service() {
                                     callback.onPartialResponse(content)
                                 }
 
-                                // Handle tool calls
                                 delta.toolCalls?.forEach { toolCall ->
                                     if (toolCall.function != null) {
                                         val convertedToolCall = ToolCall().apply {

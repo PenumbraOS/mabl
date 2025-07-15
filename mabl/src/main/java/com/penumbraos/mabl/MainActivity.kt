@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
         override fun onFinalTranscription(finalText: String) {
             runOnUiThread {
                 Log.w("MainActivity", "LLM request: $finalText")
-                controllers.tts.service?.speakIncremental(finalText)
                 uiComponents.conversationRenderer.showMessage(finalText, isUser = true)
                 uiComponents.conversationRenderer.showListening(false)
 
