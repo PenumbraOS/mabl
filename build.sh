@@ -1,4 +1,2 @@
-./gradlew :plugins:demo:installDebug
-./gradlew :plugins:openai:installDebug
-./gradlew :mabl:installAipinDebug
+./gradlew :plugins:demo:installDebug :plugins:openai:installDebug :mabl:installAipinDebug
 adb shell appops set com.penumbraos.plugins.openai MANAGE_EXTERNAL_STORAGE allow
