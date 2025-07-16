@@ -1,20 +1,17 @@
 package com.penumbraos.plugins.aipinsystem
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.edit
 import com.penumbraos.mabl.sdk.ISystemServiceRegistry
 import com.penumbraos.mabl.sdk.IToolCallback
-import com.penumbraos.mabl.sdk.IToolService
-import com.penumbraos.mabl.sdk.MablService
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.sdk.ToolParameter
+import com.penumbraos.mabl.sdk.ToolService
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.ZonedDateTime
@@ -48,7 +45,7 @@ data class AlarmData(
     val recurring: Boolean = false
 )
 
-class TimeToolService : MablService("TimeToolService") {
+class TimeToolService : ToolService("TimeToolService") {
 
     private lateinit var prefs: SharedPreferences
     private val activeTimers = ConcurrentHashMap<String, Timer>()
@@ -56,105 +53,6 @@ class TimeToolService : MablService("TimeToolService") {
     private val handler = Handler(Looper.getMainLooper())
     private var systemServices: ISystemServiceRegistry? = null
 
-    private val binder = object : IToolService.Stub() {
-        override fun executeTool(call: ToolCall, callback: IToolCallback) {
-            Log.d(TAG, "Executing tool: ${call.name} with parameters: ${call.parameters}")
-
-            when (call.name) {
-                GET_CURRENT_TIME_TOOL -> getCurrentTime(callback)
-                CREATE_TIMER_TOOL -> createTimer(call.parameters, callback)
-                LIST_TIMERS_TOOL -> listTimers(callback)
-                CANCEL_TIMER_TOOL -> cancelTimer(call.parameters, callback)
-                CREATE_ALARM_TOOL -> createAlarm(call.parameters, callback)
-                LIST_ALARMS_TOOL -> listAlarms(callback)
-                CANCEL_ALARM_TOOL -> cancelAlarm(call.parameters, callback)
-                else -> callback.onError("Unknown tool: ${call.name}")
-            }
-        }
-
-        override fun getToolDefinitions(): Array<ToolDefinition> {
-            return arrayOf(
-                ToolDefinition().apply {
-                    name = GET_CURRENT_TIME_TOOL
-                    description = "Get the current date and time"
-                    parameters = emptyArray()
-                },
-                ToolDefinition().apply {
-                    name = CREATE_TIMER_TOOL
-                    description = "Create a timer that counts down for a specified duration"
-                    parameters = arrayOf(ToolParameter().apply {
-                        name = "name"
-                        type = "string"
-                        description = "Name of the timer"
-                        required = true
-                        enumValues = emptyArray()
-                    }, ToolParameter().apply {
-                        name = "duration_seconds"
-                        type = "number"
-                        description = "Duration of the timer in seconds"
-                        required = true
-                        enumValues = emptyArray()
-                    })
-                },
-                ToolDefinition().apply {
-                    name = LIST_TIMERS_TOOL
-                    description = "List all active timers"
-                    parameters = emptyArray()
-                },
-                ToolDefinition().apply {
-                    name = CANCEL_TIMER_TOOL
-                    description = "Cancel a specific timer by ID"
-                    parameters = arrayOf(ToolParameter().apply {
-                        name = "timer_id"
-                        type = "string"
-                        description = "ID of the timer to cancel"
-                        required = true
-                        enumValues = emptyArray()
-                    })
-                },
-                ToolDefinition().apply {
-                    name = CREATE_ALARM_TOOL
-                    description = "Create an alarm for a specific date and time"
-                    parameters = arrayOf(ToolParameter().apply {
-                        name = "name"
-                        type = "string"
-                        description = "Name of the alarm"
-                        required = true
-                        enumValues = emptyArray()
-                    }, ToolParameter().apply {
-                        name = "datetime_iso"
-                        type = "string"
-                        description =
-                            "ISO 8601 formatted date and time when the alarm will trigger"
-                        required = true
-                        enumValues = emptyArray()
-                    })
-                },
-                ToolDefinition().apply {
-                    name = LIST_ALARMS_TOOL
-                    description = "List all active alarms"
-                    parameters = emptyArray()
-                },
-                ToolDefinition().apply {
-                    name = CANCEL_ALARM_TOOL
-                    description = "Cancel a specific alarm by ID"
-                    parameters = arrayOf(ToolParameter().apply {
-                        name = "alarm_id"
-                        type = "string"
-                        description = "ID of the alarm to cancel"
-                        required = true
-                        enumValues = emptyArray()
-                    })
-                }
-            )
-        }
-
-        override fun setSystemServices(services: ISystemServiceRegistry) {
-            systemServices = services
-        }
-    }
-
-    @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
 
@@ -163,7 +61,95 @@ class TimeToolService : MablService("TimeToolService") {
         restoreTimersAndAlarms()
     }
 
-    override fun onBind(intent: Intent?): IBinder = binder
+    override fun executeTool(call: ToolCall, params: JSONObject?, callback: IToolCallback) {
+        when (call.name) {
+            GET_CURRENT_TIME_TOOL -> getCurrentTime(callback)
+            CREATE_TIMER_TOOL -> createTimer(params, callback)
+            LIST_TIMERS_TOOL -> listTimers(callback)
+            CANCEL_TIMER_TOOL -> cancelTimer(params, callback)
+            CREATE_ALARM_TOOL -> createAlarm(params, callback)
+            LIST_ALARMS_TOOL -> listAlarms(callback)
+            CANCEL_ALARM_TOOL -> cancelAlarm(params, callback)
+            else -> callback.onError("Unknown tool: ${call.name}")
+        }
+    }
+
+    override fun getToolDefinitions(): Array<ToolDefinition> {
+        return arrayOf(
+            ToolDefinition().apply {
+                name = GET_CURRENT_TIME_TOOL
+                description = "Get the current date and time"
+                parameters = emptyArray()
+            },
+            ToolDefinition().apply {
+                name = CREATE_TIMER_TOOL
+                description = "Create a timer that counts down for a specified duration"
+                parameters = arrayOf(ToolParameter().apply {
+                    name = "name"
+                    type = "string"
+                    description = "Name of the timer"
+                    required = true
+                    enumValues = emptyArray()
+                }, ToolParameter().apply {
+                    name = "duration_seconds"
+                    type = "number"
+                    description = "Duration of the timer in seconds"
+                    required = true
+                    enumValues = emptyArray()
+                })
+            },
+            ToolDefinition().apply {
+                name = LIST_TIMERS_TOOL
+                description = "List all active timers"
+                parameters = emptyArray()
+            },
+            ToolDefinition().apply {
+                name = CANCEL_TIMER_TOOL
+                description = "Cancel a specific timer by ID"
+                parameters = arrayOf(ToolParameter().apply {
+                    name = "timer_id"
+                    type = "string"
+                    description = "ID of the timer to cancel"
+                    required = true
+                    enumValues = emptyArray()
+                })
+            },
+            ToolDefinition().apply {
+                name = CREATE_ALARM_TOOL
+                description = "Create an alarm for a specific date and time"
+                parameters = arrayOf(ToolParameter().apply {
+                    name = "name"
+                    type = "string"
+                    description = "Name of the alarm"
+                    required = true
+                    enumValues = emptyArray()
+                }, ToolParameter().apply {
+                    name = "datetime_iso"
+                    type = "string"
+                    description =
+                        "ISO 8601 formatted date and time when the alarm will trigger"
+                    required = true
+                    enumValues = emptyArray()
+                })
+            },
+            ToolDefinition().apply {
+                name = LIST_ALARMS_TOOL
+                description = "List all active alarms"
+                parameters = emptyArray()
+            },
+            ToolDefinition().apply {
+                name = CANCEL_ALARM_TOOL
+                description = "Cancel a specific alarm by ID"
+                parameters = arrayOf(ToolParameter().apply {
+                    name = "alarm_id"
+                    type = "string"
+                    description = "ID of the alarm to cancel"
+                    required = true
+                    enumValues = emptyArray()
+                })
+            }
+        )
+    }
 
     private fun getCurrentTime(callback: IToolCallback) {
         val now = ZonedDateTime.now()
@@ -180,9 +166,10 @@ class TimeToolService : MablService("TimeToolService") {
         callback.onSuccess(result)
     }
 
-    private fun createTimer(parameters: String, callback: IToolCallback) {
+    private fun createTimer(params: JSONObject?, callback: IToolCallback) {
+        if (params == null) return callback.onError("Invalid parameters")
+
         try {
-            val params = JSONObject(parameters)
             val name = params.getString("name")
             val durationSeconds = params.getLong("duration_seconds")
 
@@ -236,9 +223,10 @@ class TimeToolService : MablService("TimeToolService") {
         callback.onSuccess("""{"timers": $jsonArray}""")
     }
 
-    private fun cancelTimer(parameters: String, callback: IToolCallback) {
+    private fun cancelTimer(params: JSONObject?, callback: IToolCallback) {
+        if (params == null) return callback.onError("Invalid parameters")
+
         try {
-            val params = JSONObject(parameters)
             val timerId = params.getString("timer_id")
 
             activeTimers[timerId]?.cancel()
@@ -251,9 +239,10 @@ class TimeToolService : MablService("TimeToolService") {
         }
     }
 
-    private fun createAlarm(parameters: String, callback: IToolCallback) {
+    private fun createAlarm(params: JSONObject?, callback: IToolCallback) {
+        if (params == null) return callback.onError("Invalid parameters")
+
         try {
-            val params = JSONObject(parameters)
             val name = params.getString("name")
             val datetimeIso = params.getString("datetime_iso")
 
@@ -313,9 +302,10 @@ class TimeToolService : MablService("TimeToolService") {
         callback.onSuccess("""{"alarms": $jsonArray}""")
     }
 
-    private fun cancelAlarm(parameters: String, callback: IToolCallback) {
+    private fun cancelAlarm(params: JSONObject?, callback: IToolCallback) {
+        if (params == null) return callback.onError("Invalid parameters")
+
         try {
-            val params = JSONObject(parameters)
             val alarmId = params.getString("alarm_id")
 
             activeAlarms[alarmId]?.cancel()
