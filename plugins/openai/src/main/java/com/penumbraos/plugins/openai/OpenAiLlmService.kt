@@ -1,15 +1,9 @@
 package com.penumbraos.plugins.openai
 
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.aallam.openai.api.chat.*
 import com.aallam.openai.api.core.Parameters
 import com.aallam.openai.api.model.ModelId
@@ -20,6 +14,7 @@ import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmConfigCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
+import com.penumbraos.mabl.sdk.MablService
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.sdk.ToolParameter
@@ -52,7 +47,7 @@ data class PropertySchema(
     val enum: List<String>? = null
 )
 
-class OpenAiLlmService : Service() {
+class OpenAiLlmService : MablService("OpenAiLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
     private var openAI: OpenAI? = null
@@ -62,8 +57,6 @@ class OpenAiLlmService : Service() {
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
 
         configService = LlmConfigService()
         val client = PenumbraClient(this, allowInitFailure = true)
@@ -171,7 +164,7 @@ class OpenAiLlmService : Service() {
                                 ?: "You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point."
                         )
                     ) + conversationMessages
-                    
+
                     val chatCompletionRequest = ChatCompletionRequest(
                         model = ModelId(currentConfig!!.model),
                         messages = chatMessages,
@@ -297,34 +290,8 @@ class OpenAiLlmService : Service() {
 
     override fun onBind(intent: Intent?): IBinder = binder
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "OpenAI LLM Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            channel.description = "OpenAI-powered language model service"
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("OpenAI LLM Service")
-            .setContentText("OpenAI language model service is running")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .build()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "OpenAI LLM Service destroyed")
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "openai_llm_service_channel"
-        private const val NOTIFICATION_ID = 1004
     }
 }

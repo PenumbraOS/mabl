@@ -1,21 +1,17 @@
 package com.penumbraos.plugins.aipinsystem
 
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.penumbraos.mabl.sdk.ISystemServiceRegistry
 import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.IToolService
+import com.penumbraos.mabl.sdk.MablService
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.sdk.ToolParameter
@@ -52,7 +48,7 @@ data class AlarmData(
     val recurring: Boolean = false
 )
 
-class TimeToolService : Service() {
+class TimeToolService : MablService("TimeToolService") {
 
     private lateinit var prefs: SharedPreferences
     private val activeTimers = ConcurrentHashMap<String, Timer>()
@@ -164,31 +160,10 @@ class TimeToolService : Service() {
 
         prefs = getSharedPreferences("timers_alarms", MODE_PRIVATE)
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
-
         restoreTimersAndAlarms()
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
-
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "TimeToolService",
-            NotificationManager.IMPORTANCE_LOW
-        )
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("TimeToolService")
-            .setContentText("Speech recognition service is running")
-            .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
-            .build()
-    }
 
     private fun getCurrentTime(callback: IToolCallback) {
         val now = ZonedDateTime.now()
@@ -366,7 +341,7 @@ class TimeToolService : Service() {
                 put("end_time", t.endTime)
             })
         }
-        prefs.edit().putString("timers", jsonArray.toString()).apply()
+        prefs.edit { putString("timers", jsonArray.toString()) }
     }
 
     private fun saveAlarm(alarm: AlarmData) {
@@ -381,7 +356,7 @@ class TimeToolService : Service() {
                 put("recurring", a.recurring)
             })
         }
-        prefs.edit().putString("alarms", jsonArray.toString()).apply()
+        prefs.edit { putString("alarms", jsonArray.toString()) }
     }
 
     private fun getStoredTimers(): List<TimerData> {
@@ -502,10 +477,5 @@ class TimeToolService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to speak alert: ${e.message}")
         }
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "time_tool_service_channel"
-        private const val NOTIFICATION_ID = 1001
     }
 }

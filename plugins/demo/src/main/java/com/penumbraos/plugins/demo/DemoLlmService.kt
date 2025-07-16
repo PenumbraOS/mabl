@@ -1,18 +1,13 @@
 package com.penumbraos.plugins.demo
 
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
+import com.penumbraos.mabl.sdk.MablService
 import io.shubham0204.smollm.SmolLM
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +15,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "DemoLlmService"
 
-class DemoLlmService : Service() {
+class DemoLlmService : MablService("DemoLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.Default)
     private var smolLM: SmolLM? = null
@@ -28,8 +23,6 @@ class DemoLlmService : Service() {
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
 
         llmScope.launch {
             try {
@@ -50,8 +43,11 @@ class DemoLlmService : Service() {
             // Demo LLM service doesn't use tools, so we can ignore this
             Log.d(TAG, "Received ${tools.size} tool definitions (ignored)")
         }
-        
-        override fun generateResponse(messages: Array<com.penumbraos.mabl.sdk.ConversationMessage>, callback: ILlmCallback) {
+
+        override fun generateResponse(
+            messages: Array<com.penumbraos.mabl.sdk.ConversationMessage>,
+            callback: ILlmCallback
+        ) {
             Log.d(TAG, "Received ${messages.size} conversation messages")
 
             if (smolLM == null) {
@@ -116,29 +112,4 @@ class DemoLlmService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "LLM Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("LLM Service")
-            .setContentText("Language model service is running")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .build()
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "llm_service_channel"
-        private const val NOTIFICATION_ID = 1003
-    }
 }

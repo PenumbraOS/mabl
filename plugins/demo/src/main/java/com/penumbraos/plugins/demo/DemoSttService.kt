@@ -1,20 +1,15 @@
 package com.penumbraos.plugins.demo
 
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.RemoteException
 import android.speech.SpeechRecognizer
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
+import com.penumbraos.mabl.sdk.MablService
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.types.SttRecognitionListener
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.Timer
 import kotlin.concurrent.timerTask
 
-class DemoSttService : Service() {
+class DemoSttService : MablService("DemoSttService") {
     private var currentCallback: ISttCallback? = null
     private val scope = CoroutineScope(Dispatchers.IO)
 
@@ -36,9 +31,6 @@ class DemoSttService : Service() {
     override fun onCreate() {
         super.onCreate()
         client = PenumbraClient(applicationContext, true)
-
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
 
         // Hack to start STT service in advance of usage
         client.stt.launchListenerProcess(applicationContext)
@@ -118,30 +110,5 @@ class DemoSttService : Service() {
             Log.i("DemoSttService", "Timing out waiting for more utterances")
             client.stt.stopListening()
         }, 500)
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "STT Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("STT Service")
-            .setContentText("Speech recognition service is running")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .build()
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "stt_service_channel"
-        private const val NOTIFICATION_ID = 1001
     }
 }
