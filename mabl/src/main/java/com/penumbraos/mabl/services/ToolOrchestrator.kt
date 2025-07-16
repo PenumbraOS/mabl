@@ -23,6 +23,7 @@ class ToolOrchestrator(
     private val toolToServiceMap = ConcurrentHashMap<String, IToolService>()
     private var connectedServicesCount = 0
     private var allConnected = kotlinx.coroutines.CompletableDeferred<Unit>()
+    private val systemServiceRegistry = SystemServiceRegistry(allControllers)
 
     fun initialize() {
         allConnected = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -55,6 +56,7 @@ class ToolOrchestrator(
 
     private fun onToolServiceConnected(packageName: String) {
         val controller = serviceControllers[packageName]
+        controller?.service?.setSystemServices(systemServiceRegistry)
 
         connectedServicesCount++
         if (connectedServicesCount >= serviceControllers.size) {
