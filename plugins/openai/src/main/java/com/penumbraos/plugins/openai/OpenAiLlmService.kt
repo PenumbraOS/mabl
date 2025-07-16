@@ -107,9 +107,10 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
 
         override fun generateResponse(
             messages: Array<ConversationMessage>,
+            tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {
-            Log.d(TAG, "Received ${messages.size} conversation messages")
+            Log.d(TAG, "Received ${messages.size} conversation messages with ${tools.size} filtered tools")
 
             if (openAI == null) {
                 Log.e(TAG, "OpenAI client not initialized")
@@ -170,7 +171,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                         messages = chatMessages,
                         maxTokens = currentConfig!!.maxTokens,
                         temperature = currentConfig!!.temperature,
-                        tools = availableTools
+                        tools = convertToolDefinitionsToOpenAI(tools)
                     )
 
                     val responseBuilder = StringBuilder()

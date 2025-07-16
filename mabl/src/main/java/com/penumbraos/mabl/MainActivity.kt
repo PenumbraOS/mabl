@@ -42,8 +42,7 @@ class MainActivity : ComponentActivity() {
                 uiComponents.conversationRenderer.showListening(false)
 
                 val conversationManager = com.penumbraos.mabl.conversation.ConversationManager(
-                    controllers.llm.service!!,
-                    controllers.toolOrchestrator
+                    controllers
                 )
                 
                 conversationManager.processUserMessage(

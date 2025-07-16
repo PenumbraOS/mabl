@@ -9,6 +9,7 @@ import com.penumbraos.mabl.sdk.IToolService
 import com.penumbraos.mabl.sdk.PluginType
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "ToolOrchestrator"
@@ -24,6 +25,7 @@ class ToolOrchestrator(
     private var connectedServicesCount = 0
     private var allConnected = kotlinx.coroutines.CompletableDeferred<Unit>()
     private val systemServiceRegistry = SystemServiceRegistry(allControllers)
+    private val toolSimilarityService = ToolSimilarityService()
 
     fun initialize() {
         allConnected = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -52,6 +54,20 @@ class ToolOrchestrator(
         }
 
         allConnected.await()
+
+        try {
+            val outputStream = ByteArrayOutputStream()
+            context.assets.open("minilm-l6-v2-qint8-arm64.onnx").copyTo(outputStream)
+            toolSimilarityService.initialize(outputStream.toByteArray())
+            
+            // Precalculate embeddings for all available tools
+            val allTools = getAvailableToolDefinitions()
+            toolSimilarityService.precalculateToolEmbeddings(allTools)
+            
+            Log.d(TAG, "Tool similarity service initialized successfully with ${allTools.size} tool embeddings precalculated")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to initialize similarity service: ${e.message}")
+        }
     }
 
     private fun onToolServiceConnected(packageName: String) {
@@ -90,6 +106,20 @@ class ToolOrchestrator(
         return allDefinitions.toTypedArray()
     }
 
+    suspend fun getFilteredToolDefinitions(
+        userQuery: String,
+        maxTools: Int = 6
+    ): Array<ToolDefinition> {
+        val allDefinitions = getAvailableToolDefinitions()
+
+        return try {
+            toolSimilarityService.filterToolsByRelevance(allDefinitions, userQuery, maxTools)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to filter tools by similarity, returning all: ${e.message}")
+            allDefinitions
+        }
+    }
+
     fun executeTool(toolCall: ToolCall, callback: IToolCallback) {
         Log.d(TAG, "Executing tool: ${toolCall.name}")
 
@@ -112,5 +142,6 @@ class ToolOrchestrator(
         serviceInfoMap.clear()
         toolToServiceMap.clear()
         connectedServicesCount = 0
+        toolSimilarityService.close()
     }
 }

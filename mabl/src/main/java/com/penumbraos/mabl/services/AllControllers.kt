@@ -38,10 +38,6 @@ class AllControllers {
 
         allLoaded.await()
         Log.d(TAG, "All services connected")
-
-        val toolDefinitions = toolOrchestrator.getAvailableToolDefinitions()
-        Log.d(TAG, "Sending ${toolDefinitions.size} tool definitions to LLM")
-        llm.service?.setAvailableTools(toolDefinitions)
     }
 
     fun shutdown(context: Context) {

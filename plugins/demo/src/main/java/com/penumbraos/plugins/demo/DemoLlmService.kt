@@ -4,10 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import com.penumbraos.mabl.sdk.ConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.MablService
+import com.penumbraos.mabl.sdk.ToolDefinition
 import io.shubham0204.smollm.SmolLM
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,13 +41,14 @@ class DemoLlmService : MablService("DemoLlmService") {
     }
 
     private val binder = object : ILlmService.Stub() {
-        override fun setAvailableTools(tools: Array<com.penumbraos.mabl.sdk.ToolDefinition>) {
+        override fun setAvailableTools(tools: Array<ToolDefinition>) {
             // Demo LLM service doesn't use tools, so we can ignore this
             Log.d(TAG, "Received ${tools.size} tool definitions (ignored)")
         }
 
         override fun generateResponse(
-            messages: Array<com.penumbraos.mabl.sdk.ConversationMessage>,
+            messages: Array<ConversationMessage>,
+            tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {
             Log.d(TAG, "Received ${messages.size} conversation messages")

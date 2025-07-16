@@ -17,6 +17,7 @@ openai-client = "4.0.1"
 ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
+onnx-runtime = "1.20.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -42,6 +43,7 @@ openai-client = { group = "com.aallam.openai", name = "openai-client", version.r
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+onnx-runtime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnx-runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
