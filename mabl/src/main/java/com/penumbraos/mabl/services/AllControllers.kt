@@ -25,7 +25,7 @@ class AllControllers {
         llm = LlmController { checkAllConnected() }
         stt = SttController { checkAllConnected() }
         tts = TtsController { checkAllConnected() }
-        toolOrchestrator = ToolOrchestrator(context)
+        toolOrchestrator = ToolOrchestrator(context, this)
         toolOrchestrator.initialize()
     }
 

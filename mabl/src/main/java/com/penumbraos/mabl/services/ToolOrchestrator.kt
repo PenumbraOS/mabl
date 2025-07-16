@@ -8,11 +8,15 @@ import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.IToolService
 import com.penumbraos.mabl.sdk.PluginType
 import com.penumbraos.mabl.sdk.ToolCall
+import com.penumbraos.mabl.sdk.ToolDefinition
 import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "ToolOrchestrator"
 
-class ToolOrchestrator(private val context: Context) {
+class ToolOrchestrator(
+    private val context: Context,
+    allControllers: AllControllers
+) {
     private val pluginManager = PluginManager(context)
     private val serviceControllers = ConcurrentHashMap<String, ToolController>()
     private val serviceInfoMap = ConcurrentHashMap<String, PluginService>()
@@ -51,14 +55,6 @@ class ToolOrchestrator(private val context: Context) {
 
     private fun onToolServiceConnected(packageName: String) {
         val controller = serviceControllers[packageName]
-        val serviceInfo = serviceInfoMap[packageName]
-
-        // Map each tool to this service
-        serviceInfo?.tools?.forEach { toolName ->
-            if (controller?.service != null) {
-                toolToServiceMap[toolName.trim()] = controller.service!!
-            }
-        }
 
         connectedServicesCount++
         if (connectedServicesCount >= serviceControllers.size) {
@@ -66,19 +62,28 @@ class ToolOrchestrator(private val context: Context) {
         }
     }
 
-    fun getAvailableToolDefinitions(): Array<com.penumbraos.mabl.sdk.ToolDefinition> {
-        val allDefinitions = mutableListOf<com.penumbraos.mabl.sdk.ToolDefinition>()
+    fun getAvailableToolDefinitions(): Array<ToolDefinition> {
+        val allDefinitions = mutableListOf<ToolDefinition>()
 
-        for ((_, controller) in serviceControllers) {
+        // Reset existing tool mappings
+        toolToServiceMap.clear()
+
+        for ((packageName, controller) in serviceControllers) {
             controller.service?.let { service ->
                 try {
                     val definitions = service.toolDefinitions
                     allDefinitions.addAll(definitions)
+
+                    definitions.forEach { toolDef ->
+                        toolToServiceMap[toolDef.name] = service
+                    }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error getting tool definitions from service", e)
+                    Log.e(TAG, "Error getting tool definitions from $packageName", e)
                 }
             }
         }
+
+        Log.d(TAG, "Available tools: ${allDefinitions.map { it.name }}")
 
         return allDefinitions.toTypedArray()
     }
@@ -88,7 +93,12 @@ class ToolOrchestrator(private val context: Context) {
 
         val service = toolToServiceMap[toolCall.name]
         if (service != null) {
-            service.executeTool(toolCall, callback)
+            try {
+                service.executeTool(toolCall, callback)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error executing tool: ${toolCall.name}", e)
+                callback.onError("Error executing tool: ${toolCall.name}")
+            }
         } else {
             callback.onError("No service found for tool: ${toolCall.name}")
         }

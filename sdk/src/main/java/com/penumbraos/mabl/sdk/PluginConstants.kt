@@ -23,5 +23,4 @@ object PluginConstants {
     // Metadata Keys for Capability Declaration
     const val METADATA_DISPLAY_NAME = "com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
     const val METADATA_DESCRIPTION = "com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
-    const val METADATA_TOOLS = "com.penumbraos.mabl.sdk.metadata.TOOLS"
 }

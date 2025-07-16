@@ -16,8 +16,7 @@ data class PluginService(
     val className: String,
     val type: PluginType,
     val displayName: String?,
-    val description: String?,
-    val tools: List<String>?
+    val description: String?
 )
 
 class PluginManager(private val context: Context) {
@@ -74,8 +73,7 @@ class PluginManager(private val context: Context) {
                 className = serviceInfo.name,
                 type = type,
                 displayName = metadata?.getString(PluginConstants.METADATA_DISPLAY_NAME),
-                description = metadata?.getString(PluginConstants.METADATA_DESCRIPTION),
-                tools = metadata?.getString(PluginConstants.METADATA_TOOLS)?.split(",")
+                description = metadata?.getString(PluginConstants.METADATA_DESCRIPTION)
             )
         }
     }
