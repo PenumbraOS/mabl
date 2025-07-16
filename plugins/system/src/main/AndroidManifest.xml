@@ -5,7 +5,7 @@
 
     <application>
         <service
-            android:name=".TimeToolService"
+            android:name=".tool.VolumeService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.penumbraos.mabl.sdk.action.TOOL_SERVICE" />
@@ -13,10 +13,10 @@
 
             <meta-data
                 android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
-                android:value="Time Tool Service" />
+                android:value="Volume Tool Service" />
             <meta-data
                 android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
-                android:value="Tool that provides current time" />
+                android:value="Tool that provides volume manipulation" />
         </service>
     </application>
 
