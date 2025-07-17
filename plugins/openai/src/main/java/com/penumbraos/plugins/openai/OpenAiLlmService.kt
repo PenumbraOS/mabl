@@ -59,7 +59,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         super.onCreate()
 
         configService = LlmConfigService()
-        val client = PenumbraClient(this, allowInitFailure = true)
+        val client = PenumbraClient(this)
 
         llmScope.launch {
             client.waitForBridge()
@@ -110,7 +110,10 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
             tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {
-            Log.d(TAG, "Received ${messages.size} conversation messages with ${tools.size} filtered tools")
+            Log.d(
+                TAG,
+                "Received ${messages.size} conversation messages with ${tools.size} filtered tools"
+            )
 
             if (openAI == null) {
                 Log.e(TAG, "OpenAI client not initialized")

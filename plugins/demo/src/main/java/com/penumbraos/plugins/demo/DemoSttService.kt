@@ -30,7 +30,7 @@ class DemoSttService : MablService("DemoSttService") {
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
-        client = PenumbraClient(applicationContext, true)
+        client = PenumbraClient(applicationContext)
 
         // Hack to start STT service in advance of usage
         client.stt.launchListenerProcess(applicationContext)

@@ -23,7 +23,7 @@ class MABLStatusBroadcaster(
     private fun initializeSettingsClient() {
         coroutineScope.launch {
             try {
-                val client = PenumbraClient(context, allowInitFailure = true)
+                val client = PenumbraClient(context)
                 client.waitForBridge()
                 settingsClient = client.settings
             } catch (e: Exception) {
@@ -34,72 +34,92 @@ class MABLStatusBroadcaster(
 
     // Conversation Status Updates
     fun sendTranscribingStatus(partialText: String) {
-        settingsClient?.sendStatusUpdate(appId, "conversation", mapOf(
-            "state" to "transcribing",
-            "partialText" to partialText
-        ))
+        settingsClient?.sendStatusUpdate(
+            appId, "conversation", mapOf(
+                "state" to "transcribing",
+                "partialText" to partialText
+            )
+        )
     }
 
     fun sendAIThinkingStatus(userMessage: String) {
-        settingsClient?.sendStatusUpdate(appId, "conversation", mapOf(
-            "state" to "aiThinking",
-            "userMessage" to userMessage
-        ))
+        settingsClient?.sendStatusUpdate(
+            appId, "conversation", mapOf(
+                "state" to "aiThinking",
+                "userMessage" to userMessage
+            )
+        )
     }
 
     fun sendAIRespondingStatus(streamingToken: String) {
-        settingsClient?.sendStatusUpdate(appId, "conversation", mapOf(
-            "state" to "aiResponding",
-            "streamingToken" to streamingToken
-        ))
+        settingsClient?.sendStatusUpdate(
+            appId, "conversation", mapOf(
+                "state" to "aiResponding",
+                "streamingToken" to streamingToken
+            )
+        )
     }
 
     fun sendIdleStatus(lastResponse: String) {
-        settingsClient?.sendStatusUpdate(appId, "conversation", mapOf(
-            "state" to "idle",
-            "lastResponse" to lastResponse
-        ))
+        settingsClient?.sendStatusUpdate(
+            appId, "conversation", mapOf(
+                "state" to "idle",
+                "lastResponse" to lastResponse
+            )
+        )
     }
 
     fun sendErrorStatus(errorMessage: String) {
-        settingsClient?.sendStatusUpdate(appId, "conversation", mapOf(
-            "state" to "error",
-            "errorMessage" to errorMessage
-        ))
+        settingsClient?.sendStatusUpdate(
+            appId, "conversation", mapOf(
+                "state" to "error",
+                "errorMessage" to errorMessage
+            )
+        )
     }
 
     // Events
     fun sendUserMessageEvent(text: String) {
-        settingsClient?.sendEvent(appId, "userMessage", mapOf(
-            "text" to text
-        ))
+        settingsClient?.sendEvent(
+            appId, "userMessage", mapOf(
+                "text" to text
+            )
+        )
     }
 
     fun sendAIResponseEvent(text: String, hasToolCalls: Boolean) {
-        settingsClient?.sendEvent(appId, "aiResponse", mapOf(
-            "text" to text,
-            "hasToolCalls" to hasToolCalls
-        ))
+        settingsClient?.sendEvent(
+            appId, "aiResponse", mapOf(
+                "text" to text,
+                "hasToolCalls" to hasToolCalls
+            )
+        )
     }
 
     fun sendTouchpadTapEvent(tapType: String, duration: Int) {
-        settingsClient?.sendEvent(appId, "touchpadTap", mapOf(
-            "tapType" to tapType,
-            "duration" to duration
-        ))
+        settingsClient?.sendEvent(
+            appId, "touchpadTap", mapOf(
+                "tapType" to tapType,
+                "duration" to duration
+            )
+        )
     }
 
     fun sendSTTErrorEvent(error: String, source: String = "unknown") {
-        settingsClient?.sendEvent(appId, "sttError", mapOf(
-            "error" to error,
-            "source" to source
-        ))
+        settingsClient?.sendEvent(
+            appId, "sttError", mapOf(
+                "error" to error,
+                "source" to source
+            )
+        )
     }
 
     fun sendLLMErrorEvent(error: String) {
-        settingsClient?.sendEvent(appId, "llmError", mapOf(
-            "error" to error
-        ))
+        settingsClient?.sendEvent(
+            appId, "llmError", mapOf(
+                "error" to error
+            )
+        )
     }
 
     fun isInitialized(): Boolean = settingsClient != null

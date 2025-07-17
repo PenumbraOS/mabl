@@ -22,7 +22,7 @@ class InputHandler(
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
     private var isListening = false
-    private val client = PenumbraClient(context, true)
+    private val client = PenumbraClient(context)
 
     private val sttCallback = object : ISttCallback.Stub() {
         override fun onPartialTranscription(partialText: String) {
@@ -67,7 +67,7 @@ class InputHandler(
                             Log.w(TAG, "Single touchpad tap detected")
 
                             statusBroadcaster?.sendTouchpadTapEvent(
-                                "single", 
+                                "single",
                                 (event.eventTime - event.downTime).toInt()
                             )
 
