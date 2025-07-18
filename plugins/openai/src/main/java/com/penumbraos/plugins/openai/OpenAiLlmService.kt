@@ -47,6 +47,9 @@ data class PropertySchema(
     val enum: List<String>? = null
 )
 
+private const val DEFAULT_PROMPT =
+    """You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point. Only use tools when directly relevant to the task. You are able to answer general knowledge questions without tools."""
+
 class OpenAiLlmService : MablService("OpenAiLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
