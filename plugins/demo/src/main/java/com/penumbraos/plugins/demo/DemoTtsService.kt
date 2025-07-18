@@ -64,6 +64,7 @@ class DemoTtsService : MablService("DemoTtsService"), TextToSpeech.OnInitListene
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             tts?.language = Locale.getDefault()
+            Log.d("DemoTtsService", "TextToSpeech initialization succeeded")
         } else {
             Log.e("DemoTtsService", "TextToSpeech initialization failed")
         }

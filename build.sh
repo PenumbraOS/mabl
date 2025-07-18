@@ -3,3 +3,4 @@ if ! [ -f mabl/src/main/assets/minilm-l6-v2-qint8-arm64.onnx ]; then
 fi
 ./gradlew :plugins:demo:installDebug :plugins:aipinsystem:installDebug :plugins:system:installDebug :plugins:openai:installDebug :mabl:installAipinDebug
 adb shell appops set com.penumbraos.plugins.openai MANAGE_EXTERNAL_STORAGE allow
+echo "Built on $(date '+%Y-%m-%d %H:%M:%S')"
