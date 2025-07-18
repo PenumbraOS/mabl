@@ -34,6 +34,7 @@ data class LlmConfigFile(
 class LlmConfigService : ILlmConfigService {
 
     private val configScope = CoroutineScope(Dispatchers.IO)
+    private var configs: List<LlmConfiguration>? = null
     private val json = Json { ignoreUnknownKeys = true }
 
     @SuppressLint("SdCardPath")
@@ -45,7 +46,7 @@ class LlmConfigService : ILlmConfigService {
 
         configScope.launch {
             try {
-                val configs = loadConfigsFromFile()
+                val configs = getConfigs()
                 val configNames = configs.map { it.name }.toTypedArray()
                 Log.d(
                     TAG,
@@ -62,6 +63,14 @@ class LlmConfigService : ILlmConfigService {
     // TODO: Make proper Binder service
     override fun asBinder(): IBinder? {
         return null
+    }
+
+    private fun getConfigs(): List<LlmConfiguration> {
+        if (configs == null) {
+            configs = loadConfigsFromFile()
+        }
+
+        return configs ?: listOf()
     }
 
     private fun loadConfigsFromFile(): List<LlmConfiguration> {
@@ -96,6 +105,6 @@ class LlmConfigService : ILlmConfigService {
     }
 
     fun getConfigByName(name: String): LlmConfiguration? {
-        return loadConfigsFromFile().find { it.name == name }
+        return getConfigs().find { it.name == name }
     }
 }
