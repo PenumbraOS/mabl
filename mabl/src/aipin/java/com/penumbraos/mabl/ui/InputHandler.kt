@@ -24,26 +24,6 @@ class InputHandler(
     private var isListening = false
     private val client = PenumbraClient(context)
 
-    private val sttCallback = object : ISttCallback.Stub() {
-        override fun onPartialTranscription(partialText: String) {
-            Log.d(TAG, "Partial transcription: $partialText")
-            // AI Pin: Could provide audio feedback for partial transcription
-        }
-
-        override fun onFinalTranscription(finalText: String) {
-            Log.d(TAG, "Final transcription: $finalText")
-            voiceCallback?.invoke(finalText)
-            isListening = false
-        }
-
-        override fun onError(errorMessage: String) {
-            Log.e(TAG, "STT Error: $errorMessage")
-            isListening = false
-
-            statusBroadcaster?.sendSTTErrorEvent(errorMessage, "inputHandler")
-        }
-    }
-
     override fun setup(
         context: Context,
         lifecycleScope: LifecycleCoroutineScope,
