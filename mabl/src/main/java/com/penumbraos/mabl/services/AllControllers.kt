@@ -2,6 +2,7 @@ package com.penumbraos.mabl.services
 
 import android.content.Context
 import android.util.Log
+import com.penumbraos.mabl.BuildConfig
 import kotlinx.coroutines.CompletableDeferred
 
 private const val TAG = "AllControllers"
@@ -31,10 +32,41 @@ class AllControllers {
 
     suspend fun connectAll(context: Context) {
         // TODO: These packages shouldn't be hardcoded
-        llm.connect(context, "com.penumbraos.plugins.openai")
-        stt.connect(context, "com.penumbraos.plugins.demo")
-        tts.connect(context, "com.penumbraos.plugins.demo")
-        toolOrchestrator.connectAll()
+        if (BuildConfig.IS_SIMULATOR) {
+            // In simulator mode, use more resilient connection approach
+            // Only connect to services that are known to work
+            try {
+                llm.connect(context, "com.penumbraos.plugins.openai")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to connect LLM service in simulator: $e")
+            }
+            
+            try {
+                tts.connect(context, "com.penumbraos.plugins.demo")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to connect TTS service in simulator: $e")
+            }
+            
+            // STT is handled by simulator service - bind to internal simulator service
+            try {
+                stt.connect(context, context.packageName) // Connect to our own package where SimulatorSttService is registered
+                Log.d(TAG, "Connected to simulator STT service")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to connect to simulator STT service: $e")
+            }
+            
+            try {
+                toolOrchestrator.connectAll()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to connect tool orchestrator in simulator: $e")
+            }
+        } else {
+            // Normal mode - connect to all external services
+            llm.connect(context, "com.penumbraos.plugins.openai")
+            stt.connect(context, "com.penumbraos.plugins.demo")
+            tts.connect(context, "com.penumbraos.plugins.demo")
+            toolOrchestrator.connectAll()
+        }
 
         allLoaded.await()
         Log.d(TAG, "All services connected")

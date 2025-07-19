@@ -9,14 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.penumbraos.mabl.sdk.ILlmCallback
+import com.penumbraos.mabl.conversation.ConversationManager
+import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ISttCallback
-import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.PlatformUI
+import com.penumbraos.mabl.ui.SimulatorUI
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.UIFactory
 import com.penumbraos.mabl.ui.theme.MABLTheme
@@ -41,13 +43,14 @@ class MainActivity : ComponentActivity() {
                 uiComponents.conversationRenderer.showMessage(finalText, isUser = true)
                 uiComponents.conversationRenderer.showListening(false)
 
-                val conversationManager = com.penumbraos.mabl.conversation.ConversationManager(
+                val conversationManager = ConversationManager(
                     controllers
                 )
-                
+
                 conversationManager.processUserMessage(
                     "$finalText /no_think",
-                    object : com.penumbraos.mabl.conversation.ConversationManager.ConversationCallback {
+                    object :
+                        ConversationManager.ConversationCallback {
                         override fun onPartialResponse(newToken: String) {
                             Log.i("MainActivity", "LLM partial response: $newToken")
                             controllers.tts.service?.speakIncremental(newToken)
@@ -90,17 +93,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MABLTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    if (::uiComponents.isInitialized) {
-                        PlatformUI(uiComponents)
-                    } else {
-                        // Show loading state while services are connecting
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = androidx.compose.ui.Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
+                    Content()
                 }
             }
         }
@@ -123,6 +116,26 @@ class MainActivity : ComponentActivity() {
                 sttCallback = sttCallback,
                 conversationRenderer = uiComponents.conversationRenderer
             )
+        }
+    }
+
+    @Composable
+    fun Content() {
+        Log.d("MainActivity", "Content() called ${DeviceUtils.isSimulator()}")
+        if (DeviceUtils.isSimulator()) {
+            SimulatorUI(uiComponents)
+        } else {
+            if (::uiComponents.isInitialized) {
+                PlatformUI(uiComponents)
+            } else {
+                // Show loading state while services are connecting
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }
 

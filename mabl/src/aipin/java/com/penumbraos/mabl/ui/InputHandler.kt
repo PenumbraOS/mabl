@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
+import com.penumbraos.mabl.BuildConfig
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
@@ -18,11 +19,15 @@ private const val TAG = "AiPinInputHandler"
 class InputHandler(
     private val context: Context,
     private val statusBroadcaster: MABLStatusBroadcaster? = null
-) : IInputHandler {
+) : IInputHandler, SimulatorEventRouter.TouchpadEventHandler, SimulatorSttRouter.SttEventHandler {
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
     private var isListening = false
     private val client = PenumbraClient(context)
+
+    private var sttService: ISttService? = null
+    private var sttCallback: ISttCallback? = null
+    private var conversationRenderer: IConversationRenderer? = null
 
     override fun setup(
         context: Context,
@@ -31,6 +36,23 @@ class InputHandler(
         sttCallback: ISttCallback,
         conversationRenderer: IConversationRenderer
     ) {
+        this.sttService = sttService
+        this.sttCallback = sttCallback
+        this.conversationRenderer = conversationRenderer
+
+        if (BuildConfig.IS_SIMULATOR) {
+            setupSimulatorMode()
+        } else {
+            setupAiPinMode(lifecycleScope)
+        }
+    }
+
+    private fun setupSimulatorMode() {
+        SimulatorEventRouter.instance = this
+        SimulatorSttRouter.instance = this
+    }
+
+    private fun setupAiPinMode(lifecycleScope: LifecycleCoroutineScope) {
         try {
             lifecycleScope.launch {
                 client.waitForBridge()
@@ -40,25 +62,28 @@ class InputHandler(
                         if (event !is MotionEvent) {
                             return
                         }
-
-                        if (event.action == MotionEvent.ACTION_UP &&
-                            event.eventTime - event.downTime < 200
-                        ) {
-                            Log.w(TAG, "Single touchpad tap detected")
-
-                            statusBroadcaster?.sendTouchpadTapEvent(
-                                "single",
-                                (event.eventTime - event.downTime).toInt()
-                            )
-
-                            conversationRenderer.showListening(true)
-                            sttService?.startListening(sttCallback)
-                        }
+                        processTouchpadEvent(event)
                     }
                 })
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup touchpad input", e)
+        }
+    }
+
+    private fun processTouchpadEvent(event: MotionEvent) {
+        if (event.action == MotionEvent.ACTION_UP &&
+            event.eventTime - event.downTime < 200
+        ) {
+            Log.w(TAG, "Single touchpad tap detected")
+
+            statusBroadcaster?.sendTouchpadTapEvent(
+                "single",
+                (event.eventTime - event.downTime).toInt()
+            )
+
+            conversationRenderer?.showListening(true)
+            sttService?.startListening(sttCallback!!)
         }
     }
 
@@ -85,5 +110,28 @@ class InputHandler(
             Log.d(TAG, "Stopping voice listening")
             isListening = false
         }
+    }
+
+    override fun onSimulatorTouchpadEvent(event: MotionEvent) {
+        Log.d(TAG, "Simulator touchpad event received")
+        processTouchpadEvent(event)
+    }
+
+    override fun onSimulatorManualInput(text: String) {
+        Log.d(TAG, "Manual input received: $text")
+        sttCallback?.onFinalTranscription(text)
+        conversationRenderer?.showListening(false)
+    }
+
+    override fun onSimulatorStartListening() {
+        Log.d(TAG, "Simulator start listening")
+        startListening()
+        sttService?.startListening(sttCallback!!)
+    }
+
+    override fun onSimulatorStopListening() {
+        Log.d(TAG, "Simulator stop listening")
+        sttService?.stopListening()
+        stopListening()
     }
 }

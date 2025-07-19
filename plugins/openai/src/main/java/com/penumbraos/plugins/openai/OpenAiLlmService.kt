@@ -10,6 +10,7 @@ import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIHost
 import com.penumbraos.mabl.sdk.ConversationMessage
+import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmConfigCallback
 import com.penumbraos.mabl.sdk.ILlmService
@@ -62,11 +63,13 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         super.onCreate()
 
         configService = LlmConfigService()
-        val client = PenumbraClient(this)
 
         llmScope.launch {
-            client.waitForBridge()
-
+            var client: PenumbraClient? = null
+            if (DeviceUtils.isAiPin()) {
+                client = PenumbraClient(this@OpenAiLlmService)
+                client.waitForBridge()
+            }
             // Load configuration from service
             loadCurrentConfig()
 
@@ -85,8 +88,11 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                         token = apiKey,
                         host = OpenAIHost(baseUrl),
                         httpClientConfig = {
-                            install(HttpClientPlugin) {
-                                penumbraClient = client
+                            if (DeviceUtils.isAiPin()) {
+                                install(HttpClientPlugin) {
+                                    // Should have been initialized at start
+                                    penumbraClient = client!!
+                                }
                             }
                         }
                     )

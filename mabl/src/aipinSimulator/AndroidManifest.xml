@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <application>
+        <service
+            android:name="com.penumbraos.mabl.simulation.services.SimulatorSttService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.STT_SERVICE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Simulator STT Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="AI Pin Simulator speech-to-text service with manual and live input" />
+        </service>
+    </application>
+
+</manifest>

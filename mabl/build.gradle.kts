@@ -41,16 +41,26 @@ android {
             dimension = "device"
             applicationIdSuffix = ".pin"
             buildConfigField("boolean", "IS_AI_PIN", "true")
+            buildConfigField("boolean", "IS_SIMULATOR", "false")
         }
         create("aipinSimulator") {
             dimension = "device"
-            applicationIdSuffix = ".pin-sim"
+            applicationIdSuffix = ".pinsim"
             buildConfigField("boolean", "IS_AI_PIN", "true")
+            buildConfigField("boolean", "IS_SIMULATOR", "true")
         }
         create("android") {
             dimension = "device"
             applicationIdSuffix = ".android"
             buildConfigField("boolean", "IS_AI_PIN", "false")
+            buildConfigField("boolean", "IS_SIMULATOR", "false")
+        }
+    }
+    
+    sourceSets {
+        getByName("aipinSimulator") {
+            // Include Ai Pin source in simulator build
+            java.srcDirs("src/aipin/java")
         }
     }
 }
