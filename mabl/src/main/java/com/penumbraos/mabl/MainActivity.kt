@@ -18,7 +18,6 @@ import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.PlatformUI
-import com.penumbraos.mabl.ui.SimulatorUI
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.UIFactory
 import com.penumbraos.mabl.ui.theme.MABLTheme
@@ -122,19 +121,15 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun Content() {
         Log.d("MainActivity", "Content() called ${DeviceUtils.isSimulator()}")
-        if (DeviceUtils.isSimulator()) {
-            SimulatorUI(uiComponents)
+        if (::uiComponents.isInitialized) {
+            PlatformUI(uiComponents)
         } else {
-            if (::uiComponents.isInitialized) {
-                PlatformUI(uiComponents)
-            } else {
-                // Show loading state while services are connecting
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+            // Show loading state while services are connecting
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
         }
     }

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="mabl">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-06-16T22:11:06.579366Z">
+        <DropdownSelection timestamp="2025-07-19T22:12:08.588052Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/adam/.android/avd/Humane_AI_Pin.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/adam/.android/avd/Medium_Tablet.avd" />
             </handle>
           </Target>
         </DropdownSelection>

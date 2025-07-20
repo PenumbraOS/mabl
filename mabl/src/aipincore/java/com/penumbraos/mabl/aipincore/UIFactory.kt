@@ -1,7 +1,8 @@
-package com.penumbraos.mabl.ui
+package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import com.penumbraos.mabl.services.AllControllers
+import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
 import com.penumbraos.mabl.ui.interfaces.INavigationController

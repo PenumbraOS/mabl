@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.simulation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.penumbraos.mabl.ui.PlatformUI
 import com.penumbraos.mabl.ui.UIComponents
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun SimulatedPinDisplay(
     modifier: Modifier = Modifier,
@@ -59,8 +60,7 @@ fun SimulatedPinDisplay(
                 .border(2.dp, Color.Gray, RoundedCornerShape(12.dp))
                 .background(Color.Black)
         ) {
-            // Render the actual AI Pin UI content
-            PlatformUI(uiComponents)
+            com.penumbraos.mabl.aipincore.PlatformUI(uiComponents)
         }
 
         // Display dimensions indicator

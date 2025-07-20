@@ -1,11 +1,10 @@
-package com.penumbraos.mabl.ui
+package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import android.util.Log
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
-import com.penumbraos.mabl.BuildConfig
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
@@ -16,10 +15,10 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "AiPinInputHandler"
 
-class InputHandler(
-    private val context: Context,
+open class InputHandler(
+    context: Context,
     private val statusBroadcaster: MABLStatusBroadcaster? = null
-) : IInputHandler, SimulatorEventRouter.TouchpadEventHandler, SimulatorSttRouter.SttEventHandler {
+) : IInputHandler {
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
     private var isListening = false
@@ -40,19 +39,6 @@ class InputHandler(
         this.sttCallback = sttCallback
         this.conversationRenderer = conversationRenderer
 
-        if (BuildConfig.IS_SIMULATOR) {
-            setupSimulatorMode()
-        } else {
-            setupAiPinMode(lifecycleScope)
-        }
-    }
-
-    private fun setupSimulatorMode() {
-        SimulatorEventRouter.instance = this
-        SimulatorSttRouter.instance = this
-    }
-
-    private fun setupAiPinMode(lifecycleScope: LifecycleCoroutineScope) {
         try {
             lifecycleScope.launch {
                 client.waitForBridge()
@@ -71,7 +57,7 @@ class InputHandler(
         }
     }
 
-    private fun processTouchpadEvent(event: MotionEvent) {
+    fun processTouchpadEvent(event: MotionEvent) {
         if (event.action == MotionEvent.ACTION_UP &&
             event.eventTime - event.downTime < 200
         ) {
@@ -110,28 +96,5 @@ class InputHandler(
             Log.d(TAG, "Stopping voice listening")
             isListening = false
         }
-    }
-
-    override fun onSimulatorTouchpadEvent(event: MotionEvent) {
-        Log.d(TAG, "Simulator touchpad event received")
-        processTouchpadEvent(event)
-    }
-
-    override fun onSimulatorManualInput(text: String) {
-        Log.d(TAG, "Manual input received: $text")
-        sttCallback?.onFinalTranscription(text)
-        conversationRenderer?.showListening(false)
-    }
-
-    override fun onSimulatorStartListening() {
-        Log.d(TAG, "Simulator start listening")
-        startListening()
-        sttService?.startListening(sttCallback!!)
-    }
-
-    override fun onSimulatorStopListening() {
-        Log.d(TAG, "Simulator stop listening")
-        sttService?.stopListening()
-        stopListening()
     }
 }

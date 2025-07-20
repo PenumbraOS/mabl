@@ -4,7 +4,7 @@ import android.view.MotionEvent
 
 object SimulatorEventRouter {
     var instance: TouchpadEventHandler? = null
-    
+
     interface TouchpadEventHandler {
         fun onSimulatorTouchpadEvent(event: MotionEvent)
     }
@@ -12,7 +12,7 @@ object SimulatorEventRouter {
 
 object SimulatorSttRouter {
     var instance: SttEventHandler? = null
-    
+
     interface SttEventHandler {
         fun onSimulatorManualInput(text: String)
         fun onSimulatorStartListening()

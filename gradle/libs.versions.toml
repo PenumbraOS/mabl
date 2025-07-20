@@ -12,12 +12,16 @@ appcompat = "1.7.1"
 material = "1.12.0"
 penumbraos-sdk = "6e5a73b"
 penumbraos-sdk-local = "0.1.0"
+moonlight-ui = "833d7e4"
 smollm = "a2ff1e7"
 openai-client = "4.0.1"
 ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
 onnx-runtime = "1.20.0"
+room = "2.7.2"
+# The first number needs to match the Kotlin version
+ksp = "2.0.21-1.0.28"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,12 +42,16 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
 #penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
+moonlight-ui = { group = "com.github.pnivek", name = "moonlight", version.ref = "moonlight-ui" }
 smollm = { group = "com.github.shubham0204.SmolChat-Android", name = "smollm", version.ref = "smollm" }
 openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 onnx-runtime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnx-runtime" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -51,4 +59,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 

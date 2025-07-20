@@ -1,4 +1,4 @@
-package com.penumbraos.mabl.ui
+package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import android.util.Log
