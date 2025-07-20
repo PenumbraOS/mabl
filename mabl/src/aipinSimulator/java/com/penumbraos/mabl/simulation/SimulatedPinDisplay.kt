@@ -6,7 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.penumbraos.mabl.ui.UIComponents
@@ -38,29 +40,41 @@ fun SimulatedPinDisplay(
         val availableHeight = maxHeight
 
         // Calculate display size maintaining 800x720 aspect ratio
-        val (displayWidth, displayHeight) = with(density) {
-            val widthPx = (availableWidth.toPx() * 0.9f).toInt()
-            val heightPx = (availableHeight.toPx() * 0.9f).toInt()
+        val (displayWidth, displayHeight, scaleFactor) = with(density) {
+            val availableWidthPx = availableWidth.toPx() * 0.9f
+            val availableHeightPx = availableHeight.toPx() * 0.9f
 
-            val scaledHeight = (widthPx / targetAspectRatio).toInt()
-            val scaledWidth = (heightPx * targetAspectRatio).toInt()
+            val scaledHeight = availableWidthPx / targetAspectRatio
+            val scaledWidth = availableHeightPx * targetAspectRatio
 
-            if (scaledHeight <= heightPx) {
-                Pair(widthPx.toDp(), scaledHeight.toDp())
+            if (scaledHeight <= availableHeightPx) {
+                val scale = availableWidthPx / (800f * density.density)
+                Triple(availableWidthPx.toDp(), scaledHeight.toDp(), scale)
             } else {
-                Pair(scaledWidth.toDp(), heightPx.toDp())
+                val scale = availableHeightPx / (720f * density.density)
+                Triple(scaledWidth.toDp(), availableHeightPx.toDp(), scale)
             }
         }
 
         // Simulated Pin Display Container
         Box(
             modifier = Modifier
-                .size(displayWidth, displayHeight)
+                .requiredSize(displayWidth, displayHeight)
                 .clip(RoundedCornerShape(12.dp))
                 .border(2.dp, Color.Gray, RoundedCornerShape(12.dp))
                 .background(Color.Black)
         ) {
-            com.penumbraos.mabl.aipincore.PlatformUI(uiComponents)
+            Box(
+                modifier = Modifier
+                    .requiredSize(800.dp, 720.dp)
+                    .graphicsLayer(
+                        scaleX = scaleFactor,
+                        scaleY = scaleFactor,
+                        transformOrigin = TransformOrigin.Center
+                    )
+            ) {
+                com.penumbraos.mabl.aipincore.PlatformUI(uiComponents)
+            }
         }
 
         // Display dimensions indicator
