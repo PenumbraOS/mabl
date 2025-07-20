@@ -17,7 +17,7 @@ private const val TAG = "AiPinConversationRenderer"
 class ConversationRenderer(
     private val context: Context,
     private val controllers: AllControllers,
-    private val statusBroadcaster: MABLStatusBroadcaster? = null
+    private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IConversationRenderer {
 
     val penumbraClient = PenumbraClient(context)

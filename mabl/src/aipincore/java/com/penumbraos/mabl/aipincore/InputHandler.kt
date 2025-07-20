@@ -17,7 +17,7 @@ private const val TAG = "AiPinInputHandler"
 
 open class InputHandler(
     context: Context,
-    private val statusBroadcaster: MABLStatusBroadcaster? = null
+    private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IInputHandler {
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null

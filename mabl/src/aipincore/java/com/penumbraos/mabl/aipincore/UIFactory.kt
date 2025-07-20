@@ -13,7 +13,7 @@ class UIFactory(
     private val context: Context,
     private val controllers: AllControllers,
 ) {
-    private val statusBroadcaster = MABLStatusBroadcaster(context, coroutineScope)
+    private val statusBroadcaster = SettingsStatusBroadcaster(context, coroutineScope)
 
     fun createConversationRenderer(): IConversationRenderer {
         return ConversationRenderer(context, controllers, statusBroadcaster)

@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
-import com.penumbraos.mabl.aipincore.MABLStatusBroadcaster
+import com.penumbraos.mabl.aipincore.SettingsStatusBroadcaster
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
@@ -13,7 +13,7 @@ private const val TAG = "AiPinSimInputHandler"
 
 class InputHandler(
     context: Context,
-    statusBroadcaster: MABLStatusBroadcaster? = null
+    statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : com.penumbraos.mabl.aipincore.InputHandler(context, statusBroadcaster),
     SimulatorEventRouter.TouchpadEventHandler,
     SimulatorSttRouter.SttEventHandler {

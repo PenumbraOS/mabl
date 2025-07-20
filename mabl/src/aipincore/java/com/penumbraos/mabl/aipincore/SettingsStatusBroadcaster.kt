@@ -7,9 +7,9 @@ import com.penumbraos.sdk.api.SettingsClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-private const val TAG = "MABLStatusBroadcaster"
+private const val TAG = "SettingsStatusBroadcaster"
 
-class MABLStatusBroadcaster(
+class SettingsStatusBroadcaster(
     private val context: Context,
     private val coroutineScope: CoroutineScope
 ) {
