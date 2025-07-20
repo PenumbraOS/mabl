@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,13 +18,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.open.pin.ui.PinTheme
 import com.open.pin.ui.components.views.ListView
 import com.open.pin.ui.theme.PinColors
+import com.open.pin.ui.theme.PinFonts
 import com.open.pin.ui.theme.PinTypography
+import com.open.pin.ui.utils.PinDimensions
 import com.open.pin.ui.utils.modifiers.ProvideSnapCoordinator
 import com.open.pin.ui.utils.modifiers.SnapCoordinator
 import com.penumbraos.mabl.aipincore.view.TouchInterceptor
@@ -51,22 +52,29 @@ fun PlatformUI(uiComponents: UIComponents) {
                     TouchInterceptor(snapCoordinator.value, context)
                 }
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = PinTheme.colors.background)
-            ) {
-                ConversationDisplay(
-                    messages = messages.value,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            ConversationDisplay(messages = messages.value)
         }
     }
 }
 
 @Composable
 fun ConversationDisplay(
+    messages: List<Message>,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = PinTheme.colors.background)
+    ) {
+        ConversationList(
+            messages = messages,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun ConversationList(
     messages: List<Message>,
     modifier: Modifier = Modifier
 ) {
@@ -90,9 +98,6 @@ fun ConversationDisplay(
                 for (message in messages) {
                     MessageItem(
                         message = message,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
                     )
                 }
             }
@@ -103,32 +108,26 @@ fun ConversationDisplay(
 @Composable
 fun MessageItem(
     message: Message,
-    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = if (message.isUser) {
-                PinColors.primary.copy(alpha = 0.1f)
-            } else {
-                PinColors.secondary.copy(alpha = 0.1f)
-            }
-        )
+    Column(
+        modifier = Modifier.padding(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            PinText(
-                text = if (message.isUser) "You" else "Assistant",
-                style = PinTypography.labelSmall,
-                color = if (message.isUser) PinColors.primary else PinColors.secondary
-            )
-            PinText(
-                text = message.content,
-                style = PinTypography.displaySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+        PinText(
+            text = if (message.isUser) "You" else "MABL",
+            style = PinTypography.bodyLarge,
+            color = PinColors.secondary
+        )
+        PinText(
+            text = message.content,
+            style = TextStyle(
+                fontFamily = PinFonts.Poppins,
+                fontWeight = PinDimensions.fontWeightBold,
+                fontSize = PinDimensions.fontSizeExtraLarge,
+                lineHeight = 84.sp,
+                letterSpacing = 0.5.sp
+            ),
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
@@ -151,4 +150,25 @@ fun PinText(
         overflow = overflow,
         maxLines = maxLines
     )
+}
+
+@Preview(widthDp = 800, heightDp = 720)
+@Composable
+fun ConversationDisplayPreview() {
+    val messages = listOf(
+        Message(1, "Hello!", true),
+        Message(
+            2,
+            "Next week in Seoul, expect showers on Thursday morning with temperatures ranging from",
+            false
+        )
+    )
+
+    val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
+
+    PinTheme {
+        ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
+            ConversationDisplay(messages = messages)
+        }
+    }
 }
