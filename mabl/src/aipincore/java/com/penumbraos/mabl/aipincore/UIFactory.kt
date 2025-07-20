@@ -8,7 +8,7 @@ import com.penumbraos.mabl.ui.interfaces.IInputHandler
 import com.penumbraos.mabl.ui.interfaces.INavigationController
 import kotlinx.coroutines.CoroutineScope
 
-class UIFactory(
+open class UIFactory(
     coroutineScope: CoroutineScope,
     private val context: Context,
     private val controllers: AllControllers,
@@ -19,7 +19,7 @@ class UIFactory(
         return ConversationRenderer(context, controllers, statusBroadcaster)
     }
 
-    fun createInputHandler(): IInputHandler {
+    open fun createInputHandler(): IInputHandler {
         return InputHandler(context, statusBroadcaster)
     }
 
@@ -36,4 +36,3 @@ class UIFactory(
         )
     }
 }
-
