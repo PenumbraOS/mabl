@@ -7,5 +7,5 @@ typealias InputHandler = com.penumbraos.mabl.aipincore.InputHandler
 
 @Composable
 fun PlatformUI(uiComponents: UIComponents) =
-    com.penumbraos.mabl.aipincore.InternalPlatformUI(uiComponents)
+    com.penumbraos.mabl.aipincore.PlatformUI(uiComponents)
 typealias UIFactory = com.penumbraos.mabl.aipincore.UIFactory
