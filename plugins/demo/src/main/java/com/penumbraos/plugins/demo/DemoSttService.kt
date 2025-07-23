@@ -15,8 +15,6 @@ import com.penumbraos.sdk.api.types.SttRecognitionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Timer
-import kotlin.concurrent.timerTask
 
 class DemoSttService : MablService("DemoSttService") {
     private var currentCallback: ISttCallback? = null
@@ -24,8 +22,7 @@ class DemoSttService : MablService("DemoSttService") {
 
     private lateinit var client: PenumbraClient
 
-    private var utteranceTimer: Timer? = null
-
+    private var isListening = false
 
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
@@ -52,8 +49,6 @@ class DemoSttService : MablService("DemoSttService") {
                     results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let {
                             try {
-                                utteranceTimer?.cancel()
-                                utteranceTimer = null
                                 currentCallback?.onFinalTranscription(it)
                             } catch (e: RemoteException) {
                                 Log.e("DemoSttService", "Callback error", e)
@@ -65,7 +60,6 @@ class DemoSttService : MablService("DemoSttService") {
                     partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let {
                             try {
-                                updateUtteranceCompletionTimer()
                                 currentCallback?.onPartialTranscription(it)
                             } catch (e: RemoteException) {
                                 Log.e("DemoSttService", "Callback error", e)
@@ -74,8 +68,7 @@ class DemoSttService : MablService("DemoSttService") {
                 }
 
                 override fun onEndOfSpeech() {
-                    Log.i("DemoSttService", "End of speech. Stopping STT")
-                    client.stt.stopListening()
+                    Log.i("DemoSttService", "End of speech. Continuing")
                 }
             })
         }
@@ -84,14 +77,29 @@ class DemoSttService : MablService("DemoSttService") {
     private val binder = object : ISttService.Stub() {
         override fun startListening(callback: ISttCallback) {
             currentCallback = callback
-            Log.i("DemoSttService", "Starting STT")
-            client.stt.startListening()
+            this@DemoSttService.startListening()
         }
 
         override fun stopListening() {
-            Log.i("DemoSttService", "Stopping STT")
-            client.stt.stopListening()
+            this@DemoSttService.stopListening()
         }
+    }
+
+    fun startListening() {
+        if (isListening) {
+            Log.w("DemoSttService", "Already listening. Not starting STT")
+            return
+        }
+
+        Log.i("DemoSttService", "Starting STT")
+        isListening = true
+        client.stt.startListening()
+    }
+
+    fun stopListening() {
+        Log.i("DemoSttService", "Stopping STT")
+        isListening = false
+        client.stt.stopListening()
     }
 
     override fun onDestroy() {
@@ -101,14 +109,5 @@ class DemoSttService : MablService("DemoSttService") {
 
     override fun onBind(intent: Intent): IBinder {
         return binder
-    }
-
-    private fun updateUtteranceCompletionTimer() {
-        utteranceTimer?.cancel()
-        utteranceTimer = Timer()
-        utteranceTimer?.schedule(timerTask {
-            Log.i("DemoSttService", "Timing out waiting for more utterances")
-            client.stt.stopListening()
-        }, 500)
     }
 }
