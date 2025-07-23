@@ -36,7 +36,7 @@ class InputHandler(
 
     override fun onSimulatorTouchpadEvent(event: MotionEvent) {
         Log.d(TAG, "Simulator touchpad event received")
-        super.processTouchpadEvent(event)
+        super.touchpadGestureManager.processTouchpadEvent(event)
     }
 
     override fun onSimulatorManualInput(text: String) {

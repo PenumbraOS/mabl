@@ -2,27 +2,28 @@ package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import android.util.Log
-import android.view.InputEvent
-import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
+import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
+import com.penumbraos.mabl.aipincore.input.TouchpadGesture
+import com.penumbraos.mabl.aipincore.input.TouchpadGestureKind
+import com.penumbraos.mabl.aipincore.input.TouchpadGestureManager
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.sdk.ISttService
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
 import com.penumbraos.sdk.PenumbraClient
-import com.penumbraos.sdk.api.types.TouchpadInputReceiver
-import kotlinx.coroutines.launch
 
 private const val TAG = "AiPinInputHandler"
 
 open class InputHandler(
-    context: Context,
+    private val context: Context,
     private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IInputHandler {
     private var voiceCallback: ((String) -> Unit)? = null
     private var textCallback: ((String) -> Unit)? = null
     private var isListening = false
     private val client = PenumbraClient(context)
+    internal lateinit var touchpadGestureManager: TouchpadGestureManager
 
     private var sttService: ISttService? = null
     private var sttCallback: ISttCallback? = null
@@ -39,38 +40,36 @@ open class InputHandler(
         this.sttCallback = sttCallback
         this.conversationRenderer = conversationRenderer
 
-        try {
-            lifecycleScope.launch {
-                client.waitForBridge()
-
-                client.touchpad.register(object : TouchpadInputReceiver {
-                    override fun onInputEvent(event: InputEvent) {
-                        if (event !is MotionEvent) {
-                            return
+        this.touchpadGestureManager = TouchpadGestureManager(
+            context,
+            lifecycleScope,
+            client,
+            object : ITouchpadGestureDelegate {
+                override fun onGesture(gesture: TouchpadGesture) {
+                    // TODO: Build proper API for Input Handler to perform standardized triggers
+                    when (gesture.kind) {
+                        TouchpadGestureKind.HOLD_START -> {
+                            conversationRenderer.showListening(true)
+                            sttService?.startListening(sttCallback)
                         }
-                        processTouchpadEvent(event)
+
+                        TouchpadGestureKind.HOLD_END -> {
+                            conversationRenderer.showListening(false)
+                            sttService?.stopListening()
+                        }
+
+                        else -> {}
                     }
-                })
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to setup touchpad input", e)
-        }
-    }
 
-    fun processTouchpadEvent(event: MotionEvent) {
-        if (event.action == MotionEvent.ACTION_UP &&
-            event.eventTime - event.downTime < 200
-        ) {
-            Log.w(TAG, "Single touchpad tap detected")
-
-            statusBroadcaster?.sendTouchpadTapEvent(
-                "single",
-                (event.eventTime - event.downTime).toInt()
-            )
-
-            conversationRenderer?.showListening(true)
-            sttService?.startListening(sttCallback!!)
-        }
+                    val eventName = if (gesture.fingerCount > 1) {
+                        "${gesture.kind.name}_MULTI"
+                    } else {
+                        "${gesture.kind.name}_SINGLE"
+                    }
+                    statusBroadcaster?.sendTouchpadTapEvent(eventName, gesture.duration.toInt())
+                    Log.w(TAG, "Touchpad gesture: $gesture")
+                }
+            })
     }
 
     override fun onVoiceInput(callback: (String) -> Unit) {
