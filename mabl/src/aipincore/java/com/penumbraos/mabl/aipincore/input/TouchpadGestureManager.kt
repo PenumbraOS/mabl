@@ -6,7 +6,6 @@ import android.os.Looper
 import android.view.GestureDetector
 import android.view.InputEvent
 import android.view.MotionEvent
-import android.view.ViewConfiguration.getLongPressTimeout
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.types.TouchpadInputReceiver
@@ -15,6 +14,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "TouchpadGestureListener"
 
 private const val MIN_GESTURE_SEPARATION_MS = 500L
+private const val MIN_HOLD_TIME_MS = 200L
 
 class TouchpadGestureManager(
     context: Context,
@@ -27,6 +27,7 @@ class TouchpadGestureManager(
     private var isHolding = false
     private var holdStartTime = 0L
     private var twoFingerHoldHandler: Handler? = null
+    private var singleFingerHoldHandler: Handler? = null
     private val activePointers = mutableSetOf<Int>()
 
     private var lastEventTime: Long = 0
@@ -60,17 +61,6 @@ class TouchpadGestureManager(
             sendEventIfAllowed(e) { TouchpadGesture(TouchpadGestureKind.DOUBLE_TAP, 0, 1) }
             return true
         }
-
-        override fun onLongPress(e: MotionEvent) {
-            if (!isHolding && activePointers.size == 1) {
-                sendEventIfAllowed(e) {
-                    isHolding = true
-                    holdStartTime = e.eventTime
-
-                    TouchpadGesture(TouchpadGestureKind.HOLD_START, 0, 1)
-                }
-            }
-        }
     }
 
     fun processTouchpadEvent(event: MotionEvent) {
@@ -82,10 +72,27 @@ class TouchpadGestureManager(
         when (event.action and MotionEvent.ACTION_MASK) {
             MotionEvent.ACTION_DOWN -> {
                 activePointers.add(event.getPointerId(0))
+
+                if (activePointers.size == 1) {
+                    holdStartTime = event.eventTime
+                    singleFingerHoldHandler = Handler(Looper.getMainLooper())
+                    singleFingerHoldHandler?.postDelayed({
+                        if (!isHolding && activePointers.size == 1) {
+                            sendEventIfAllowed(event) {
+                                isHolding = true
+                                TouchpadGesture(TouchpadGestureKind.HOLD_START, 0, 1)
+                            }
+                        }
+                    }, MIN_HOLD_TIME_MS)
+                }
             }
 
             MotionEvent.ACTION_UP -> {
                 activePointers.remove(event.getPointerId(0))
+
+                // Cancel any pending single finger hold
+                singleFingerHoldHandler?.removeCallbacksAndMessages(null)
+                singleFingerHoldHandler = null
 
                 // Handle hold end
                 if (isHolding) {
@@ -100,6 +107,10 @@ class TouchpadGestureManager(
                 activePointers.add(event.getPointerId(pointerIndex))
 
                 if (activePointers.size == 2) {
+                    // Cancel single finger hold when second finger comes down
+                    singleFingerHoldHandler?.removeCallbacksAndMessages(null)
+                    singleFingerHoldHandler = null
+
                     holdStartTime = event.eventTime
 
                     twoFingerHoldHandler = Handler(Looper.getMainLooper())
@@ -114,7 +125,7 @@ class TouchpadGestureManager(
                                 )
                             }
                         }
-                    }, getLongPressTimeout().toLong())
+                    }, MIN_HOLD_TIME_MS)
                 }
             }
 
