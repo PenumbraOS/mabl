@@ -4,7 +4,6 @@ import android.content.Context
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
-import com.penumbraos.mabl.ui.interfaces.INavigationController
 
 class UIFactory(
     coroutineScope: CoroutineScope,
@@ -20,16 +19,11 @@ class UIFactory(
         return InputHandler(context)
     }
 
-    fun createNavigationController(): INavigationController {
-        return NavigationController(context)
-    }
-
     // Convenience method to create all UI components at once
     fun createUIComponents(): UIComponents {
         return UIComponents(
             conversationRenderer = createConversationRenderer(),
             inputHandler = createInputHandler(),
-            navigationController = createNavigationController()
         )
     }
 }

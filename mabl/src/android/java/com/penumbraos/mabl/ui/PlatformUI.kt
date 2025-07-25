@@ -39,33 +39,32 @@ import com.penumbraos.mabl.discovery.PluginService
 
 @Composable
 fun PlatformUI(uiComponents: UIComponents) {
-    val navigationController = uiComponents.navigationController as NavigationController
     val conversationRenderer = uiComponents.conversationRenderer as ConversationRenderer
     val inputHandler = uiComponents.inputHandler
 
-    when (navigationController.currentScreen.value) {
-        AndroidScreen.CONVERSATION -> {
-            ConversationUI(
-                conversation = conversationRenderer.conversationState.value,
-                transcription = conversationRenderer.transcriptionState.value,
-                isListening = conversationRenderer.listeningState.value,
-                onStartListening = { inputHandler.startListening() },
-                onStopListening = { inputHandler.stopListening() },
-                onNavigateToPlugins = { navigationController.navigateToPluginDiscovery() }
-            )
-        }
+    // when (navigationController.currentScreen.value) {
+    //     AndroidScreen.CONVERSATION -> {
+    //         ConversationUI(
+    //             conversation = conversationRenderer.conversationState.value,
+    //             transcription = conversationRenderer.transcriptionState.value,
+    //             isListening = conversationRenderer.listeningState.value,
+    //             onStartListening = { inputHandler.startListening() },
+    //             onStopListening = { inputHandler.stopListening() },
+    //             onNavigateToPlugins = {  }
+    //         )
+    //     }
 
-        AndroidScreen.PLUGIN_DISCOVERY -> {
-            PluginDiscoveryScreen(
-                pluginManager = PluginManager(LocalContext.current),
-                onBack = { navigationController.goBack() }
-            )
-        }
+    //     AndroidScreen.PLUGIN_DISCOVERY -> {
+    //         PluginDiscoveryScreen(
+    //             pluginManager = PluginManager(LocalContext.current),
+    //             onBack = {  }
+    //         )
+    //     }
 
-        AndroidScreen.SETTINGS -> {
-            SettingsScreen(onBack = { navigationController.goBack() })
-        }
-    }
+    //     AndroidScreen.SETTINGS -> {
+    //         SettingsScreen(onBack = {  })
+    //     }
+    // }
 }
 
 @Composable

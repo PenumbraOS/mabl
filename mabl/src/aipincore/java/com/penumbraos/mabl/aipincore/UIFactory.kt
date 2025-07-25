@@ -5,7 +5,6 @@ import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
-import com.penumbraos.mabl.ui.interfaces.INavigationController
 import kotlinx.coroutines.CoroutineScope
 
 open class UIFactory(
@@ -23,16 +22,11 @@ open class UIFactory(
         return InputHandler(context, statusBroadcaster)
     }
 
-    fun createNavigationController(): INavigationController {
-        return NavigationController(context)
-    }
-
     // Convenience method to create all UI components at once
     fun createUIComponents(): UIComponents {
         return UIComponents(
             conversationRenderer = createConversationRenderer(),
             inputHandler = createInputHandler(),
-            navigationController = createNavigationController()
         )
     }
 }
