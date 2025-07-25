@@ -70,7 +70,6 @@ android {
 
 dependencies {
     implementation(project(":sdk"))
-    implementation(project(":ui"))
     implementation(libs.penumbraos.sdk)
     "aipinImplementation"(libs.moonlight.ui)
     "aipinSimulatorImplementation"(libs.moonlight.ui)

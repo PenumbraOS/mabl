@@ -26,7 +26,6 @@ dependencyResolutionManagement {
 rootProject.name = "MABL"
 include(":mabl")
 include(":sdk")
-include(":ui")
 include(":plugins:demo")
 include(":plugins:openai")
 include(":plugins:aipinsystem")

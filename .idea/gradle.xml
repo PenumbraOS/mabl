@@ -17,7 +17,6 @@
             <option value="$PROJECT_DIR$/plugins/openai" />
             <option value="$PROJECT_DIR$/plugins/system" />
             <option value="$PROJECT_DIR$/sdk" />
-            <option value="$PROJECT_DIR$/ui" />
           </set>
         </option>
       </GradleProjectSettings>
