@@ -66,13 +66,19 @@ class ConversationManager(
         filteredTools: Array<ToolDefinition>,
         callback: ConversationCallback
     ) {
+        val responseText = if (!response.text.isEmpty()) {
+            response.text
+        } else {
+            "EMPTY RESPONSE"
+        }
+
         if (response.toolCalls.isNotEmpty()) {
             Log.d(TAG, "LLM requested ${response.toolCalls.size} tool calls")
 
             // Add assistant message with tool calls to history
             val assistantMsg = ConversationMessage().apply {
                 type = "assistant"
-                content = response.text ?: ""
+                content = responseText
                 toolCalls = response.toolCalls
                 toolCallId = null
             }
@@ -117,12 +123,12 @@ class ConversationManager(
             // No tool calls, this is the final response
             val assistantMsg = ConversationMessage().apply {
                 type = "assistant"
-                content = response.text ?: ""
+                content = responseText
                 toolCalls = emptyArray()
                 toolCallId = null
             }
             conversationHistory.add(assistantMsg)
-            callback.onCompleteResponse(response.text ?: "")
+            callback.onCompleteResponse(responseText)
         }
     }
 
@@ -132,6 +138,7 @@ class ConversationManager(
     ) {
         // Add tool results to conversation history
         pendingToolResults.forEach { (callId, result) ->
+            // TODO: Handle this
             val toolCall = pendingToolCalls[callId]
             val toolMsg = ConversationMessage().apply {
                 type = "tool"

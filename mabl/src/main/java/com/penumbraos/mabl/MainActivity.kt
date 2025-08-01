@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.penumbraos.mabl.conversation.ConversationManager
-import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
@@ -120,7 +119,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Content() {
-        Log.d("MainActivity", "Content() called ${DeviceUtils.isSimulator()}")
         if (::uiComponents.isInitialized) {
             PlatformUI(uiComponents)
         } else {
