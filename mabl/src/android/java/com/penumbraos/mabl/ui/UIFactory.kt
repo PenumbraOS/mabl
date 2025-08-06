@@ -4,6 +4,7 @@ import android.content.Context
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IInputHandler
+import kotlinx.coroutines.CoroutineScope
 
 class UIFactory(
     coroutineScope: CoroutineScope,

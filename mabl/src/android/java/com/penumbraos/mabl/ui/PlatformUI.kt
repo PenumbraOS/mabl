@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.penumbraos.mabl.discovery.PluginManager
 import com.penumbraos.mabl.discovery.PluginService
@@ -218,15 +217,6 @@ private fun PluginCard(service: PluginService) {
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            service.tools?.let { tools ->
-                if (tools.isNotEmpty()) {
-                    Text(
-                        text = "Tools: ${tools.joinToString()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
         }
     }
 }
