@@ -1,0 +1,84 @@
+name: Release on Push
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Release APKs
+        run: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease
+
+      - name: Rename APK files
+        run: |
+          # Create release artifacts directory
+          mkdir -p release-artifacts
+
+          # Rename main app APKs
+          cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release-unsigned.apk release-artifacts/MABL-AiPin.apk
+          cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release-unsigned.apk release-artifacts/MABL-AiPin-Simulator.apk
+          cp mabl/build/outputs/apk/android/release/mabl-android-release-unsigned.apk release-artifacts/MABL-Android.apk
+
+          # Rename plugin APKs
+          cp plugins/demo/build/outputs/apk/release/demo-release-unsigned.apk release-artifacts/Plugin-Demo.apk
+          cp plugins/openai/build/outputs/apk/release/openai-release-unsigned.apk release-artifacts/Plugin-OpenAI.apk
+          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release-unsigned.apk release-artifacts/Plugin-AiPin-System.apk
+          cp plugins/system/build/outputs/apk/release/system-release-unsigned.apk release-artifacts/Plugin-Generic-System.apk
+
+      - name: Generate version tag
+        id: version
+        run: |
+          TODAY=$(date +'%Y-%m-%d')
+
+          # Get all existing releases for today (fetch more to avoid pagination issues)
+          EXISTING=$(gh release list --limit 100 --json tagName --jq '.[].tagName' | grep "^${TODAY}\." || echo "")
+
+          if [ -z "$EXISTING" ]; then
+            # No releases today, start with .0
+            BUILD_NUM=0
+          else
+            # Find highest build number for today
+            BUILD_NUM=$(echo "$EXISTING" | sed "s/^${TODAY}\.//" | sort -n | tail -1)
+            BUILD_NUM=$((BUILD_NUM + 1))
+          fi
+
+          echo "Existing releases for ${TODAY}: $EXISTING"
+          echo "Next build number: $BUILD_NUM"
+
+          VERSION="${TODAY}.${BUILD_NUM}"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Alpha ${{ steps.version.outputs.tag }}
+          prerelease: true
+          generate_release_notes: true
+          files: release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
