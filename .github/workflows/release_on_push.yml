@@ -36,15 +36,15 @@ jobs:
           mkdir -p release-artifacts
 
           # Rename main app APKs
-          cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release-unsigned.apk release-artifacts/MABL-AiPin.apk
-          cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release-unsigned.apk release-artifacts/MABL-AiPin-Simulator.apk
-          cp mabl/build/outputs/apk/android/release/mabl-android-release-unsigned.apk release-artifacts/MABL-Android.apk
+          cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release.apk release-artifacts/MABL-AiPin.apk
+          cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release.apk release-artifacts/MABL-AiPin-Simulator.apk
+          cp mabl/build/outputs/apk/android/release/mabl-android-release.apk release-artifacts/MABL-Android.apk
 
           # Rename plugin APKs
-          cp plugins/demo/build/outputs/apk/release/demo-release-unsigned.apk release-artifacts/Plugin-Demo.apk
-          cp plugins/openai/build/outputs/apk/release/openai-release-unsigned.apk release-artifacts/Plugin-OpenAI.apk
-          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release-unsigned.apk release-artifacts/Plugin-AiPin-System.apk
-          cp plugins/system/build/outputs/apk/release/system-release-unsigned.apk release-artifacts/Plugin-Generic-System.apk
+          cp plugins/demo/build/outputs/apk/release/demo-release.apk release-artifacts/Plugin-Demo.apk
+          cp plugins/openai/build/outputs/apk/release/openai-release.apk release-artifacts/Plugin-OpenAI.apk
+          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-unsigned.apk release-artifacts/Plugin-AiPin-System.apk
+          cp plugins/system/build/outputs/apk/release/system-release.apk release-artifacts/Plugin-Generic-System.apk
 
       - name: Generate version tag
         id: version
