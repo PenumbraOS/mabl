@@ -35,6 +35,9 @@ jobs:
           # Create release artifacts directory
           mkdir -p release-artifacts
 
+          ls mabl/build/outputs/apk/aipin/release/
+          ls plugins/demo/build/outputs/apk/release/
+
           # Rename main app APKs
           cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release.apk release-artifacts/MABL-AiPin.apk
           cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release.apk release-artifacts/MABL-AiPin-Simulator.apk
@@ -43,7 +46,7 @@ jobs:
           # Rename plugin APKs
           cp plugins/demo/build/outputs/apk/release/demo-release.apk release-artifacts/Plugin-Demo.apk
           cp plugins/openai/build/outputs/apk/release/openai-release.apk release-artifacts/Plugin-OpenAI.apk
-          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-unsigned.apk release-artifacts/Plugin-AiPin-System.apk
+          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release.apk release-artifacts/Plugin-AiPin-System.apk
           cp plugins/system/build/outputs/apk/release/system-release.apk release-artifacts/Plugin-Generic-System.apk
 
       - name: Generate version tag
