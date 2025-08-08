@@ -26,6 +26,11 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+      
+      - name: Download MiniLM ONNX model
+        run: |
+          mkdir -p mabl/src/main/assets
+          curl -L -f -o mabl/src/main/assets/minilm-l6-v2-qint8-arm64.onnx "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model_qint8_arm64.onnx?download=true"
 
       - name: Build Release APKs
         run: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease
