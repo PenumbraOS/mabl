@@ -7,7 +7,6 @@ import com.penumbraos.mabl.data.MessageRepository
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
-import com.penumbraos.sdk.PenumbraClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,18 +19,22 @@ class ConversationRenderer(
     private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IConversationRenderer {
 
-    val penumbraClient = PenumbraClient(context)
+    //    val penumbraClient = PenumbraClient(context)
     private val messageRepository: MessageRepository by lazy {
         MessageRepository(AppDatabase.getDatabase(context).messageDao())
     }
 
-    init {
-        CoroutineScope(Dispatchers.Default).launch {
-            penumbraClient.waitForBridge()
-            penumbraClient.handTracking.stopTracking()
-            Log.d(TAG, "Hand tracking stopped")
-        }
-    }
+//    init {
+//        CoroutineScope(Dispatchers.Default).launch {
+//            penumbraClient.waitForBridge()
+//            penumbraClient.handTracking.acquireHATSLock()
+//            Log.d(TAG, "Hand tracking stopped")
+//            penumbraClient.handTracking.releaseHATSLock()
+//            delay(1000)
+//            penumbraClient.handTracking.acquireHATSLock()
+//            Log.d(TAG, "Hand tracking stopped v2")
+//        }
+//    }
 
     override fun showMessage(message: String, isUser: Boolean) {
         Log.d(TAG, "Message: $message (isUser: $isUser)")
