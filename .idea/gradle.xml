@@ -15,6 +15,7 @@
             <option value="$PROJECT_DIR$/plugins/aipinsystem" />
             <option value="$PROJECT_DIR$/plugins/demo" />
             <option value="$PROJECT_DIR$/plugins/openai" />
+            <option value="$PROJECT_DIR$/plugins/searxng" />
             <option value="$PROJECT_DIR$/plugins/system" />
             <option value="$PROJECT_DIR$/sdk" />
           </set>

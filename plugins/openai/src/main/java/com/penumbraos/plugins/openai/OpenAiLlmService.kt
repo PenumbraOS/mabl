@@ -49,7 +49,7 @@ data class PropertySchema(
 )
 
 private const val DEFAULT_PROMPT =
-    """You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point. Only use tools when directly relevant to the task. You are able to answer general knowledge questions without tools."""
+    """You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point. Only use tools when directly relevant to the task. You have a wide swath of tools available to you and you are capable of answering most queries. You are not limited to a single set of functionalities, and your available tools are varied and can support many possible interations."""
 
 class OpenAiLlmService : MablService("OpenAiLlmService") {
 
@@ -174,7 +174,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                         ChatMessage(
                             role = ChatRole.System,
                             content = currentConfig!!.systemPrompt
-                                ?: "You are the MABL voice assistant. Provide clear, concise, and accurate responses. Your response will be spoken aloud to the user, so keep the response short and to the point."
+                                ?: DEFAULT_PROMPT
                         )
                     ) + conversationMessages
 

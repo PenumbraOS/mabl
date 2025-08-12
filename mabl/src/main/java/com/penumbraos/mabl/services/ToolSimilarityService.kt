@@ -3,6 +3,7 @@ package com.penumbraos.mabl.services
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import android.util.Log
 import com.penumbraos.mabl.sdk.ToolDefinition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,8 @@ import kotlinx.coroutines.withContext
 import java.nio.LongBuffer
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.sqrt
+
+private const val TAG = "ToolSimilarityService"
 
 class ToolSimilarityService {
     private var ortEnvironment: OrtEnvironment? = null
@@ -32,7 +35,7 @@ class ToolSimilarityService {
 
     suspend fun precalculateToolEmbeddings(tools: Array<ToolDefinition>) {
         if (ortSession == null) return
-        
+
         withContext(scope.coroutineContext) {
             tools.forEach { tool ->
                 val toolText = buildToolText(tool)
@@ -66,12 +69,14 @@ class ToolSimilarityService {
                 tool to similarity
             }
 
-            toolScores
+            val scores = toolScores
                 .filter { it.second >= SIMILARITY_THRESHOLD }
                 .sortedByDescending { it.second }
                 .take(maxTools)
-                .map { it.first }
-                .toTypedArray()
+
+            Log.d(TAG, "Filtered tools: ${scores.map { "${it.first.name}: ${it.second}" }}")
+
+            scores.map { it.first }.toTypedArray()
         }
     }
 

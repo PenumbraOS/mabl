@@ -19,6 +19,7 @@ kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
 onnx-runtime = "1.20.0"
 room = "2.7.2"
+jsoup = "1.17.2"
 # The first number needs to match the Kotlin version
 ksp = "2.0.21-1.0.28"
 
@@ -44,12 +45,15 @@ penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = 
 moonlight-ui = { group = "com.github.pnivek", name = "moonlight", version.ref = "moonlight-ui" }
 openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
+ktor-content-negociation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor-client" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor-client" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 onnx-runtime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnx-runtime" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
