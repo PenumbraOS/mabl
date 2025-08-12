@@ -13,7 +13,6 @@ material = "1.12.0"
 penumbraos-sdk = "c21c0fc"
 penumbraos-sdk-local = "0.1.0"
 moonlight-ui = "833d7e4"
-smollm = "a2ff1e7"
 openai-client = "4.0.1"
 ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
@@ -43,7 +42,6 @@ material = { group = "com.google.android.material", name = "material", version.r
 penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
 #penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
 moonlight-ui = { group = "com.github.pnivek", name = "moonlight", version.ref = "moonlight-ui" }
-smollm = { group = "com.github.shubham0204.SmolChat-Android", name = "smollm", version.ref = "smollm" }
 openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
