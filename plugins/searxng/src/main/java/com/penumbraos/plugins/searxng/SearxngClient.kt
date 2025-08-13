@@ -13,10 +13,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
-import kotlin.random.Random
 
 private const val TAG = "SearxngClient"
 
@@ -61,7 +59,7 @@ class SearxngClient(
     companion object {
         private val DEFAULT_INSTANCES = listOf(
             "https://search.bus-hit.me",
-            "https://searx.tiekoetter.com", 
+            "https://searx.tiekoetter.com",
             "https://search.sapti.me",
             "https://searx.be",
             "https://searx.perennialte.ch"
@@ -88,7 +86,10 @@ class SearxngClient(
             penumbraClient = penumbra
         }
         defaultRequest {
-            header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+            header(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            )
             header("Accept-Language", "en-US,en;q=0.5")
         }
     }
@@ -128,13 +129,25 @@ class SearxngClient(
                         if (timeRange.isNotBlank()) {
                             parameter("time_range", timeRange)
                         }
+                        // Headers to look more like a real browser
                         header("Referer", instance)
+                        header(
+                            "Accept",
+                            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"
+                        )
+                        header("Accept-Language", "en-US,en;q=0.9")
+                        header("DNT", "1")
+                        header("Connection", "keep-alive")
+                        header("Upgrade-Insecure-Requests", "1")
+                        header("Sec-Fetch-Dest", "document")
+                        header("Sec-Fetch-Mode", "navigate")
+                        header("Sec-Fetch-Site", "same-origin")
                     }
                 }
 
                 if (response != null) {
                     val html = response.bodyAsText()
-                    
+
                     if (html.length < 200) {
                         Log.w(TAG, "Response too short from $instance: ${html.length} chars")
                         continue
@@ -142,31 +155,10 @@ class SearxngClient(
 
                     // Check if we were redirected to index page
                     if (!htmlParser.hasValidResults(html)) {
-                        Log.w(TAG, "No valid results from $instance, retrying with delay")
-                        delay(2000)
-                        
-                        // Retry once
-                        val retryResponse = withTimeoutOrNull(FALLBACK_TIMEOUT_MS) {
-                            httpClient.get("$instance/search") {
-                                parameter("q", query.trim())
-                                parameter("categories", categories)
-                                if (engines.isNotBlank()) {
-                                    parameter("engines", engines)
-                                }
-                                parameter("safesearch", safeSearch)
-                                if (timeRange.isNotBlank()) {
-                                    parameter("time_range", timeRange)
-                                }
-                                header("Referer", instance)
-                            }
-                        }
-                        
-                        if (retryResponse != null) {
-                            val retryHtml = retryResponse.bodyAsText()
-                            if (htmlParser.hasValidResults(retryHtml)) {
-                                return parseHtmlResults(retryHtml, query, maxResults, instance)
-                            }
-                        }
+                        Log.w(
+                            TAG,
+                            "No valid results from $instance - likely bot detection, moving to next instance"
+                        )
                         continue
                     }
 
@@ -184,15 +176,20 @@ class SearxngClient(
         return null
     }
 
-    private fun parseHtmlResults(html: String, query: String, maxResults: Int, instance: String): SearxngResponse? {
+    private fun parseHtmlResults(
+        html: String,
+        query: String,
+        maxResults: Int,
+        instance: String
+    ): SearxngResponse? {
         val htmlResults = htmlParser.parseResults(html)
-        
+
         if (htmlResults.isEmpty()) {
             Log.w(TAG, "HTML parsing yielded no results from $instance")
             Log.d(TAG, "HTML snippet: ${html.take(500)}")
             return null
         }
-        
+
         val searchResults = htmlResults.take(maxResults).map { htmlResult ->
             SearchResult(
                 url = htmlResult.url,
@@ -201,9 +198,9 @@ class SearxngClient(
                 engine = "searxng"
             )
         }
-        
+
         Log.d(TAG, "HTML parsing successful from $instance: ${searchResults.size} results")
-        
+
         return SearxngResponse(
             query = query,
             number_of_results = searchResults.size,
