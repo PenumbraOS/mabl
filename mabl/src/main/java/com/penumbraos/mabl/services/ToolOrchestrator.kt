@@ -18,6 +18,8 @@ class ToolOrchestrator(
     private val context: Context,
     allControllers: AllControllers
 ) {
+    val allTools = mutableListOf<ToolDefinition>()
+
     private val pluginManager = PluginManager(context)
     private val serviceControllers = ConcurrentHashMap<String, ToolController>()
     private val serviceInfoMap = ConcurrentHashMap<String, PluginService>()
@@ -59,12 +61,15 @@ class ToolOrchestrator(
             val outputStream = ByteArrayOutputStream()
             context.assets.open("minilm-l6-v2-qint8-arm64.onnx").copyTo(outputStream)
             toolSimilarityService.initialize(outputStream.toByteArray())
-            
+
             // Precalculate embeddings for all available tools
-            val allTools = getAvailableToolDefinitions()
+            buildToolDefinitionsMap()
             toolSimilarityService.precalculateToolEmbeddings(allTools)
-            
-            Log.d(TAG, "Tool similarity service initialized successfully with ${allTools.size} tool embeddings precalculated")
+
+            Log.d(
+                TAG,
+                "Tool similarity service initialized successfully with ${allTools.size} tool embeddings precalculated"
+            )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to initialize similarity service: ${e.message}")
         }
@@ -80,17 +85,15 @@ class ToolOrchestrator(
         }
     }
 
-    fun getAvailableToolDefinitions(): Array<ToolDefinition> {
-        val allDefinitions = mutableListOf<ToolDefinition>()
-
-        // Reset existing tool mappings
+    fun buildToolDefinitionsMap() {
+        allTools.clear()
         toolToServiceMap.clear()
 
         for ((packageName, controller) in serviceControllers) {
             controller.service?.let { service ->
                 try {
                     val definitions = service.toolDefinitions
-                    allDefinitions.addAll(definitions)
+                    allTools.addAll(definitions)
 
                     definitions.forEach { toolDef ->
                         toolToServiceMap[toolDef.name] = service
@@ -101,22 +104,21 @@ class ToolOrchestrator(
             }
         }
 
-        Log.d(TAG, "Available tools: ${allDefinitions.map { it.name }}")
-
-        return allDefinitions.toTypedArray()
+        Log.d(TAG, "Available tools: ${allTools.map { it.name }}")
     }
 
     suspend fun getFilteredToolDefinitions(
         userQuery: String,
         maxTools: Int = 6
-    ): Array<ToolDefinition> {
-        val allDefinitions = getAvailableToolDefinitions()
-
+    ): List<ToolDefinition> {
         return try {
-            toolSimilarityService.filterToolsByRelevance(allDefinitions, userQuery, maxTools)
+            val filteredTools =
+                toolSimilarityService.filterToolsByRelevance(allTools, userQuery, maxTools)
+            val priorityTools = allTools.filter { it.isPriority && !filteredTools.contains(it) }
+            filteredTools + priorityTools
         } catch (e: Exception) {
             Log.w(TAG, "Failed to filter tools by similarity, returning all: ${e.message}")
-            allDefinitions
+            allTools
         }
     }
 

@@ -34,9 +34,9 @@ class ConversationManager(
                 allControllers.toolOrchestrator.getFilteredToolDefinitions(userMessage)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to filter tools for query: ${e.message}")
-                allControllers.toolOrchestrator.getAvailableToolDefinitions()
+                allControllers.toolOrchestrator.allTools
             }
-        }
+        }.toTypedArray()
 
         Log.d(
             TAG,

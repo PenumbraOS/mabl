@@ -91,6 +91,7 @@ class WebSearchService : ToolService("WebSearchService") {
                 name = WEB_SEARCH
                 description =
                     "Search the web for current information and return structured results. Use this tool for current events, news, technical information, articles, and knowledge lookups. Returns JSON with search results including title, URL, content, and source for each result."
+                isPriority = true
                 parameters = arrayOf(
                     ToolParameter().apply {
                         name = "query"

@@ -33,7 +33,7 @@ class ToolSimilarityService {
         }
     }
 
-    suspend fun precalculateToolEmbeddings(tools: Array<ToolDefinition>) {
+    suspend fun precalculateToolEmbeddings(tools: List<ToolDefinition>) {
         if (ortSession == null) return
 
         withContext(scope.coroutineContext) {
@@ -46,10 +46,10 @@ class ToolSimilarityService {
     }
 
     suspend fun filterToolsByRelevance(
-        tools: Array<ToolDefinition>,
+        tools: List<ToolDefinition>,
         userQuery: String,
         maxTools: Int
-    ): Array<ToolDefinition> {
+    ): List<ToolDefinition> {
         if (ortSession == null) {
             throw IllegalStateException("Tool similarity service not initialized")
         }
@@ -76,7 +76,7 @@ class ToolSimilarityService {
 
             Log.d(TAG, "Filtered tools: ${scores.map { "${it.first.name}: ${it.second}" }}")
 
-            scores.map { it.first }.toTypedArray()
+            scores.map { it.first }
         }
     }
 
