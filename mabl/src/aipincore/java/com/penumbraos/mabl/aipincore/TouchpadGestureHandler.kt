@@ -7,38 +7,28 @@ import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureKind
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureManager
-import com.penumbraos.mabl.sdk.ISttCallback
-import com.penumbraos.mabl.sdk.ISttService
-import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
-import com.penumbraos.mabl.ui.interfaces.IInputHandler
+import com.penumbraos.mabl.interaction.IInteractionFlowManager
+import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import com.penumbraos.sdk.PenumbraClient
 
-private const val TAG = "AiPinInputHandler"
+private const val TAG = "TouchpadGestureHandler"
 
-open class InputHandler(
+open class TouchpadGestureHandler(
     private val context: Context,
     private val statusBroadcaster: SettingsStatusBroadcaster? = null
-) : IInputHandler {
-    private var voiceCallback: ((String) -> Unit)? = null
-    private var textCallback: ((String) -> Unit)? = null
+) : IPlatformInputHandler {
     private var isListening = false
     private val client = PenumbraClient(context)
     internal lateinit var touchpadGestureManager: TouchpadGestureManager
 
-    private var sttService: ISttService? = null
-    private var sttCallback: ISttCallback? = null
-    private var conversationRenderer: IConversationRenderer? = null
+    private lateinit var interactionFlowManager: IInteractionFlowManager
 
     override fun setup(
         context: Context,
         lifecycleScope: LifecycleCoroutineScope,
-        sttService: ISttService?,
-        sttCallback: ISttCallback,
-        conversationRenderer: IConversationRenderer
+        interactionFlowManager: IInteractionFlowManager
     ) {
-        this.sttService = sttService
-        this.sttCallback = sttCallback
-        this.conversationRenderer = conversationRenderer
+        this.interactionFlowManager = interactionFlowManager
 
         this.touchpadGestureManager = TouchpadGestureManager(
             context,
@@ -49,13 +39,13 @@ open class InputHandler(
                     // TODO: Build proper API for Input Handler to perform standardized triggers
                     when (gesture.kind) {
                         TouchpadGestureKind.HOLD_START -> {
-                            conversationRenderer.showListening(true)
-                            sttService?.startListening(sttCallback)
+                            interactionFlowManager.startListening()
                         }
 
                         TouchpadGestureKind.HOLD_END -> {
-                            conversationRenderer.showListening(false)
-                            sttService?.stopListening()
+                            if (interactionFlowManager.isFlowActive()) {
+                                interactionFlowManager.cancelCurrentFlow()
+                            }
                         }
 
                         else -> {}
@@ -72,28 +62,13 @@ open class InputHandler(
             })
     }
 
-    override fun onVoiceInput(callback: (String) -> Unit) {
-        this.voiceCallback = callback
+    fun startListening() {
+        interactionFlowManager.startListening()
     }
 
-    override fun onTextInput(callback: (String) -> Unit) {
-        this.textCallback = callback
-        // AI Pin: Text input not typically supported, but could use voice-to-text
-        Log.d(TAG, "Text input requested - using voice-to-text fallback")
-        onVoiceInput(callback)
-    }
-
-    override fun startListening() {
-        if (!isListening) {
-            Log.d(TAG, "Starting voice listening")
-            isListening = true
-        }
-    }
-
-    override fun stopListening() {
-        if (isListening) {
-            Log.d(TAG, "Stopping voice listening")
-            isListening = false
+    fun stopListening() {
+        if (interactionFlowManager.isFlowActive()) {
+            interactionFlowManager.cancelCurrentFlow()
         }
     }
 }

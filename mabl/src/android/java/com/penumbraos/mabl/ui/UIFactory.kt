@@ -1,13 +1,14 @@
 package com.penumbraos.mabl.ui
 
 import android.content.Context
+import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
-import com.penumbraos.mabl.ui.interfaces.IInputHandler
+import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import kotlinx.coroutines.CoroutineScope
 
 class UIFactory(
-    coroutineScope: CoroutineScope,
+    private val coroutineScope: CoroutineScope,
     private val context: Context,
     private val controllers: AllControllers
 ) {
@@ -16,15 +17,14 @@ class UIFactory(
         return ConversationRenderer(context, controllers)
     }
 
-    fun createInputHandler(): IInputHandler {
-        return InputHandler(context)
+    fun createPlatformInputHandler(): IPlatformInputHandler {
+        return AndroidPlatformInputHandler()
     }
 
-    // Convenience method to create all UI components at once
     fun createUIComponents(): UIComponents {
         return UIComponents(
             conversationRenderer = createConversationRenderer(),
-            inputHandler = createInputHandler(),
+            platformInputHandler = createPlatformInputHandler(),
         )
     }
 }

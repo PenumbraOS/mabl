@@ -5,33 +5,28 @@ import android.util.Log
 import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.SettingsStatusBroadcaster
-import com.penumbraos.mabl.sdk.ISttCallback
-import com.penumbraos.mabl.sdk.ISttService
-import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
+import com.penumbraos.mabl.interaction.IInteractionFlowManager
 
-private const val TAG = "AiPinSimInputHandler"
+private const val TAG = "SimulatorInputHandler"
 
-class InputHandler(
+class SimulatorInputHandler(
     context: Context,
     statusBroadcaster: SettingsStatusBroadcaster? = null
-) : com.penumbraos.mabl.aipincore.InputHandler(context, statusBroadcaster),
+) : com.penumbraos.mabl.aipincore.TouchpadGestureHandler(context, statusBroadcaster),
     SimulatorEventRouter.TouchpadEventHandler,
     SimulatorSttRouter.SttEventHandler {
 
-    private var sttService: ISttService? = null
-    private var sttCallback: ISttCallback? = null
-    private var conversationRenderer: IConversationRenderer? = null
+    private lateinit var interactionFlowManager: IInteractionFlowManager
 
     override fun setup(
         context: Context,
         lifecycleScope: LifecycleCoroutineScope,
-        sttService: ISttService?,
-        sttCallback: ISttCallback,
-        conversationRenderer: IConversationRenderer
+        interactionFlowManager: IInteractionFlowManager
     ) {
         SimulatorEventRouter.instance = this
         SimulatorSttRouter.instance = this
-        super.setup(context, lifecycleScope, sttService, sttCallback, conversationRenderer)
+        this.interactionFlowManager = interactionFlowManager
+        super.setup(context, lifecycleScope, interactionFlowManager)
     }
 
     override fun onSimulatorTouchpadEvent(event: MotionEvent) {
@@ -41,19 +36,18 @@ class InputHandler(
 
     override fun onSimulatorManualInput(text: String) {
         Log.d(TAG, "Manual input received: $text")
-        sttCallback?.onFinalTranscription(text)
-        conversationRenderer?.showListening(false)
+        interactionFlowManager.startConversationFromInput(text)
     }
 
     override fun onSimulatorStartListening() {
         Log.d(TAG, "Simulator start listening")
-        startListening()
-        sttService?.startListening(sttCallback!!)
+        interactionFlowManager.startListening()
     }
 
     override fun onSimulatorStopListening() {
         Log.d(TAG, "Simulator stop listening")
-        sttService?.stopListening()
-        stopListening()
+        if (interactionFlowManager.isFlowActive()) {
+            interactionFlowManager.cancelCurrentFlow()
+        }
     }
 }

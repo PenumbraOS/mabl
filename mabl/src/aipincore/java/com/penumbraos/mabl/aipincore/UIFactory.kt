@@ -4,7 +4,7 @@ import android.content.Context
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
-import com.penumbraos.mabl.ui.interfaces.IInputHandler
+import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import kotlinx.coroutines.CoroutineScope
 
 open class UIFactory(
@@ -18,15 +18,14 @@ open class UIFactory(
         return ConversationRenderer(context, controllers, statusBroadcaster)
     }
 
-    open fun createInputHandler(): IInputHandler {
-        return InputHandler(context, statusBroadcaster)
+    open fun createPlatformInputHandler(): IPlatformInputHandler {
+        return TouchpadGestureHandler(context, statusBroadcaster)
     }
 
-    // Convenience method to create all UI components at once
     fun createUIComponents(): UIComponents {
         return UIComponents(
             conversationRenderer = createConversationRenderer(),
-            inputHandler = createInputHandler(),
+            platformInputHandler = createPlatformInputHandler(),
         )
     }
 }

@@ -3,6 +3,10 @@ package com.penumbraos.mabl.services
 import android.content.Context
 import android.util.Log
 import com.penumbraos.mabl.BuildConfig
+import com.penumbraos.mabl.data.AppDatabase
+import com.penumbraos.mabl.data.ConversationRepository
+import com.penumbraos.mabl.interaction.InteractionFlowManager
+import com.penumbraos.mabl.interaction.ConversationSessionManager
 import kotlinx.coroutines.CompletableDeferred
 
 private const val TAG = "AllControllers"
@@ -13,6 +17,9 @@ class AllControllers {
     lateinit var stt: SttController
     lateinit var tts: TtsController
     lateinit var toolOrchestrator: ToolOrchestrator
+    lateinit var interactionFlowManager: InteractionFlowManager
+    lateinit var conversationSessionManager: ConversationSessionManager
+    lateinit var conversationRepository: ConversationRepository
 
     val allLoaded = CompletableDeferred<Unit>()
 
@@ -28,6 +35,15 @@ class AllControllers {
         tts = TtsController { checkAllConnected() }
         toolOrchestrator = ToolOrchestrator(context, this)
         toolOrchestrator.initialize()
+        
+        val database = AppDatabase.getDatabase(context)
+        conversationRepository = ConversationRepository(
+            database.conversationDao(),
+            database.conversationMessageDao()
+        )
+        
+        interactionFlowManager = InteractionFlowManager(this)
+        conversationSessionManager = ConversationSessionManager(this, conversationRepository)
     }
 
     suspend fun connectAll(context: Context) {

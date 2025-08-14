@@ -9,6 +9,7 @@ class SttController(onConnect: () -> Unit) :
     ServiceController<ISttService>(PluginType.STT, onConnect) {
 
     var delegate: ISttCallback? = null
+    private var isListening = false
 
     fun startListening() {
         if (service == null) {
@@ -17,6 +18,7 @@ class SttController(onConnect: () -> Unit) :
             throw IllegalStateException("STT delegate not set")
         }
         service?.startListening(delegate)
+        isListening = true
     }
 
     fun stopListening() {
@@ -24,7 +26,16 @@ class SttController(onConnect: () -> Unit) :
             throw IllegalStateException("STT service not connected")
         }
         service?.stopListening()
+        isListening = false
     }
+    
+    fun cancelListening() {
+        if (isListening) {
+            stopListening()
+        }
+    }
+    
+    fun isCurrentlyListening(): Boolean = isListening
 
     override fun castService(service: IBinder): ISttService {
         return ISttService.Stub.asInterface(service)

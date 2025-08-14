@@ -8,16 +8,78 @@ import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.services.AllControllers
+import com.penumbraos.mabl.data.ConversationRepository
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 private const val TAG = "ConversationManager"
 
+@Serializable
+data class SerializableToolCall(
+    val id: String,
+    val name: String,
+    val parameters: String
+)
+
 class ConversationManager(
-    private val allControllers: AllControllers
+    private val allControllers: AllControllers,
+    private val conversationRepository: ConversationRepository? = null
 ) {
     private val conversationHistory = mutableListOf<ConversationMessage>()
     private val pendingToolCalls = mutableMapOf<String, ToolCall>()
     private val pendingToolResults = mutableMapOf<String, String>()
+    private var currentConversationId: String? = null
+    private val json = Json { ignoreUnknownKeys = true }
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+
+    fun setConversationId(conversationId: String) {
+        this.currentConversationId = conversationId
+    }
+    
+    suspend fun resumeConversation(conversationId: String) {
+        this.currentConversationId = conversationId
+        
+        if (conversationRepository != null) {
+            // Load conversation history from database
+            val messages = conversationRepository.getConversationMessages(conversationId)
+            conversationHistory.clear()
+            
+            // Convert database messages to SDK messages
+            for (dbMessage in messages) {
+                val sdkMessage = ConversationMessage().apply {
+                    type = dbMessage.type
+                    content = dbMessage.content
+                    toolCalls = if (dbMessage.toolCalls != null) {
+                        try {
+                            val serializableToolCalls = json.decodeFromString<Array<SerializableToolCall>>(dbMessage.toolCalls)
+                            serializableToolCalls.map { serializable ->
+                                ToolCall().apply {
+                                    id = serializable.id
+                                    name = serializable.name
+                                    parameters = serializable.parameters
+                                }
+                            }.toTypedArray()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to parse tool calls: ${e.message}")
+                            emptyArray()
+                        }
+                    } else {
+                        emptyArray()
+                    }
+                    toolCallId = dbMessage.toolCallId
+                }
+                conversationHistory.add(sdkMessage)
+            }
+            
+            Log.d(TAG, "Resumed conversation $conversationId with ${conversationHistory.size} messages")
+        }
+    }
 
     fun processUserMessage(userMessage: String, callback: ConversationCallback) {
         val userMsg = ConversationMessage().apply {
@@ -27,6 +89,9 @@ class ConversationManager(
             toolCallId = null
         }
         conversationHistory.add(userMsg)
+        
+        // Persist user message to database
+        persistMessage("user", userMessage)
 
         // Filter tools based on user query before sending to LLM
         val filteredTools = runBlocking {
@@ -83,6 +148,17 @@ class ConversationManager(
                 toolCallId = null
             }
             conversationHistory.add(assistantMsg)
+            
+            // Persist assistant message with tool calls to database
+            val serializableToolCalls = response.toolCalls.map { toolCall ->
+                SerializableToolCall(
+                    id = toolCall.id,
+                    name = toolCall.name,
+                    parameters = toolCall.parameters
+                )
+            }.toTypedArray()
+            val toolCallsJson = json.encodeToString(serializableToolCalls)
+            persistMessage("assistant", responseText, toolCallsJson)
 
             // Execute tool calls
             val toolCallsToExecute = response.toolCalls.size
@@ -128,6 +204,10 @@ class ConversationManager(
                 toolCallId = null
             }
             conversationHistory.add(assistantMsg)
+            
+            // Persist assistant message to database
+            persistMessage("assistant", responseText)
+            
             callback.onCompleteResponse(responseText)
         }
     }
@@ -138,7 +218,6 @@ class ConversationManager(
     ) {
         // Add tool results to conversation history
         pendingToolResults.forEach { (callId, result) ->
-            // TODO: Handle this
             val toolCall = pendingToolCalls[callId]
             val toolMsg = ConversationMessage().apply {
                 type = "tool"
@@ -147,6 +226,9 @@ class ConversationManager(
                 toolCallId = callId
             }
             conversationHistory.add(toolMsg)
+            
+            // Persist tool result to database
+            persistMessage("tool", result, null, callId)
         }
 
         // Clear pending calls
@@ -173,6 +255,10 @@ class ConversationManager(
                         toolCallId = null
                     }
                     conversationHistory.add(assistantMsg)
+                    
+                    // Persist final assistant response to database
+                    persistMessage("assistant", response.text ?: "")
+                    
                     callback.onCompleteResponse(response.text ?: "")
                 }
 
@@ -182,6 +268,29 @@ class ConversationManager(
             })
     }
 
+
+    private fun persistMessage(
+        type: String, 
+        content: String, 
+        toolCalls: String? = null, 
+        toolCallId: String? = null
+    ) {
+        if (conversationRepository != null && currentConversationId != null) {
+            coroutineScope.launch {
+                try {
+                    conversationRepository.addMessage(
+                        conversationId = currentConversationId!!,
+                        type = type,
+                        content = content,
+                        toolCalls = toolCalls,
+                        toolCallId = toolCallId
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to persist message: ${e.message}")
+                }
+            }
+        }
+    }
 
     interface ConversationCallback {
         fun onPartialResponse(newToken: String)

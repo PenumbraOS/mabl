@@ -12,8 +12,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.penumbraos.mabl.conversation.ConversationManager
-import com.penumbraos.mabl.sdk.ISttCallback
+import com.penumbraos.mabl.interaction.InteractionContentCallback
+import com.penumbraos.mabl.interaction.InteractionStateCallback
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.PlatformUI
@@ -27,56 +27,88 @@ class MainActivity : ComponentActivity() {
     private val controllers = AllControllers()
     private lateinit var uiComponents: UIComponents
 
-    private val sttCallback = object : ISttCallback.Stub() {
-        override fun onPartialTranscription(partialText: String) {
+    private val interactionStateCallback = object : InteractionStateCallback {
+        override fun onListeningStarted() {
             runOnUiThread {
-                Log.i("MainActivity", "STT partial transcription: $partialText")
-                uiComponents.conversationRenderer.showTranscription(partialText)
+                Log.i("MainActivity", "Listening started")
+                uiComponents.conversationRenderer.showListening(true)
             }
         }
 
-        override fun onFinalTranscription(finalText: String) {
+        override fun onListeningStopped() {
             runOnUiThread {
-                Log.w("MainActivity", "LLM request: $finalText")
-                uiComponents.conversationRenderer.showMessage(finalText, isUser = true)
+                Log.i("MainActivity", "Listening stopped")
                 uiComponents.conversationRenderer.showListening(false)
-
-                val conversationManager = ConversationManager(
-                    controllers
-                )
-
-                conversationManager.processUserMessage(
-                    "$finalText /no_think",
-                    object :
-                        ConversationManager.ConversationCallback {
-                        override fun onPartialResponse(newToken: String) {
-                            Log.i("MainActivity", "LLM partial response: $newToken")
-                            controllers.tts.service?.speakIncremental(newToken)
-                        }
-
-                        override fun onCompleteResponse(finalResponse: String) {
-                            runOnUiThread {
-                                uiComponents.conversationRenderer.showMessage(
-                                    finalResponse,
-                                    isUser = false
-                                )
-                            }
-                        }
-
-                        override fun onError(error: String) {
-                            runOnUiThread {
-                                Log.w("MainActivity", "Conversation error: $error")
-                                uiComponents.conversationRenderer.showError(Error.LlmError(error))
-                            }
-                        }
-                    }
-                )
             }
         }
 
-        override fun onError(errorMessage: String) {
+        override fun onProcessingStarted() {
             runOnUiThread {
-                uiComponents.conversationRenderer.showError(Error.SttError(errorMessage))
+                Log.i("MainActivity", "Processing started")
+                // Could show processing indicator here
+            }
+        }
+
+        override fun onProcessingStopped() {
+            runOnUiThread {
+                Log.i("MainActivity", "Processing stopped")
+            }
+        }
+
+        override fun onSpeakingStarted() {
+            runOnUiThread {
+                Log.i("MainActivity", "Speaking started")
+                // Could show speaking indicator here
+            }
+        }
+
+        override fun onSpeakingStopped() {
+            runOnUiThread {
+                Log.i("MainActivity", "Speaking stopped")
+            }
+        }
+
+        override fun onFlowCancelled() {
+            runOnUiThread {
+                Log.i("MainActivity", "Flow cancelled")
+                uiComponents.conversationRenderer.showListening(false)
+            }
+        }
+
+        override fun onError(error: String) {
+            runOnUiThread {
+                Log.e("MainActivity", "Interaction error: $error")
+                uiComponents.conversationRenderer.showError(Error.LlmError(error))
+            }
+        }
+    }
+
+    private val interactionContentCallback = object : InteractionContentCallback {
+        override fun onPartialTranscription(text: String) {
+            runOnUiThread {
+                Log.i("MainActivity", "Partial transcription: $text")
+                uiComponents.conversationRenderer.showTranscription(text)
+            }
+        }
+
+        override fun onFinalTranscription(text: String) {
+            runOnUiThread {
+                Log.i("MainActivity", "Final transcription: $text")
+                uiComponents.conversationRenderer.showMessage(text, isUser = true)
+            }
+        }
+
+        override fun onPartialResponse(token: String) {
+            runOnUiThread {
+                Log.i("MainActivity", "Partial response: $token")
+                // Could show partial response in UI
+            }
+        }
+
+        override fun onFinalResponse(response: String) {
+            runOnUiThread {
+                Log.i("MainActivity", "Final response: $response")
+                uiComponents.conversationRenderer.showMessage(response, isUser = false)
             }
         }
     }
@@ -104,16 +136,21 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             controllers.connectAll(this@MainActivity)
-            controllers.stt.delegate = sttCallback
 
-            // Setup input handling
-            uiComponents.inputHandler.setup(
+            controllers.interactionFlowManager.setStateCallback(interactionStateCallback)
+            controllers.interactionFlowManager.setContentCallback(interactionContentCallback)
+
+            // TODO: Allow renewing conversation
+            val conversationManager = controllers.conversationSessionManager.startNewConversation()
+            controllers.interactionFlowManager.setConversationManager(conversationManager)
+
+            uiComponents.platformInputHandler.setup(
                 context = this@MainActivity,
                 lifecycleScope = lifecycleScope,
-                sttService = controllers.stt.service,
-                sttCallback = sttCallback,
-                conversationRenderer = uiComponents.conversationRenderer
+                interactionFlowManager = controllers.interactionFlowManager
             )
+
+            Log.d("MainActivity", "Centralized interaction flow initialized")
         }
     }
 

@@ -39,7 +39,6 @@ import com.penumbraos.mabl.discovery.PluginService
 @Composable
 fun PlatformUI(uiComponents: UIComponents) {
     val conversationRenderer = uiComponents.conversationRenderer as ConversationRenderer
-    val inputHandler = uiComponents.inputHandler
 
     // when (navigationController.currentScreen.value) {
     //     AndroidScreen.CONVERSATION -> {
