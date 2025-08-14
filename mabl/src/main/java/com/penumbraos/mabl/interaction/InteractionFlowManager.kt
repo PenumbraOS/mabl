@@ -101,6 +101,7 @@ class InteractionFlowManager(
         setState(InteractionFlowState.CANCELLING)
 
         allControllers.stt.cancelListening()
+        allControllers.tts.service?.stopSpeaking()
 
         setState(InteractionFlowState.IDLE)
         stateCallback?.onFlowCancelled()

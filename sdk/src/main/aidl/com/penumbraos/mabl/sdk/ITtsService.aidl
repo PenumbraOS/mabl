@@ -12,4 +12,8 @@ interface ITtsService {
     * Appends to the current utterance and continues speaking it. Can receive single or multiple words
     */
     void speakIncremental(String text);
+    /**
+    * Stop any utterances currently being spoken
+    */
+    void stopSpeaking();
 }

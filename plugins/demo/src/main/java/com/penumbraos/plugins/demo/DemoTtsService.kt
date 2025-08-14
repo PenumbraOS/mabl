@@ -59,6 +59,10 @@ class DemoTtsService : MablService("DemoTtsService"), TextToSpeech.OnInitListene
                 }, 500)
             }
         }
+
+        override fun stopSpeaking() {
+            tts?.stop()
+        }
     }
 
     override fun onInit(status: Int) {

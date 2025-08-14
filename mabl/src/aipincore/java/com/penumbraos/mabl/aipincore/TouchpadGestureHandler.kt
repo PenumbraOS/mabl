@@ -37,6 +37,11 @@ open class TouchpadGestureHandler(
             object : ITouchpadGestureDelegate {
                 override fun onGesture(gesture: TouchpadGesture) {
                     // TODO: Build proper API for Input Handler to perform standardized triggers
+                    if (gesture.kind != TouchpadGestureKind.HOLD_END) {
+                        // Any gesture that isn't a release should halt talking
+                        interactionFlowManager.cancelCurrentFlow()
+                    }
+
                     when (gesture.kind) {
                         TouchpadGestureKind.HOLD_START -> {
                             interactionFlowManager.startListening()
