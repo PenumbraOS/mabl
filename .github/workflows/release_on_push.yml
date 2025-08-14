@@ -76,15 +76,15 @@ jobs:
           mkdir -p release-artifacts
 
           # Rename main app APKs
-          cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release.apk "release-artifacts/MABL-AiPin-${VERSION_NAME}.apk"
-          cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release.apk "release-artifacts/MABL-AiPin-Simulator-${VERSION_NAME}.apk"
-          cp mabl/build/outputs/apk/android/release/mabl-android-release.apk "release-artifacts/MABL-Android-${VERSION_NAME}.apk"
+          cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release.apk "release-artifacts/PenumbraOS-MABL-AiPin-${VERSION_NAME}.apk"
+          cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release.apk "release-artifacts/PenumbraOS-MABL-AiPin-Simulator-${VERSION_NAME}.apk"
+          cp mabl/build/outputs/apk/android/release/mabl-android-release.apk "release-artifacts/PenumbraOS-MABL-Android-${VERSION_NAME}.apk"
 
           # Rename plugin APKs
-          cp plugins/demo/build/outputs/apk/release/demo-release.apk "release-artifacts/Plugin-Demo-${VERSION_NAME}.apk"
-          cp plugins/openai/build/outputs/apk/release/openai-release.apk "release-artifacts/Plugin-OpenAI-${VERSION_NAME}.apk"
-          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release.apk "release-artifacts/Plugin-AiPin-System-${VERSION_NAME}.apk"
-          cp plugins/system/build/outputs/apk/release/system-release.apk "release-artifacts/Plugin-Generic-System-${VERSION_NAME}.apk"
+          cp plugins/demo/build/outputs/apk/release/demo-release.apk "release-artifacts/PenumbraOS-Plugin-Demo-${VERSION_NAME}.apk"
+          cp plugins/openai/build/outputs/apk/release/openai-release.apk "release-artifacts/PenumbraOS-Plugin-OpenAI-${VERSION_NAME}.apk"
+          cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release.apk "release-artifacts/PenumbraOS-Plugin-AiPin-System-${VERSION_NAME}.apk"
+          cp plugins/system/build/outputs/apk/release/system-release.apk "release-artifacts/PenumbraOS-Plugin-Generic-System-${VERSION_NAME}.apk"
 
       - name: Create Prerelease
         uses: softprops/action-gh-release@v2
