@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application>
+        <service
+            android:name=".GoogleSearchService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.TOOL_SERVICE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Google Search Tool Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="Tool that provides Google Custom Search capabilities" />
+        </service>
+    </application>
+
+</manifest>
