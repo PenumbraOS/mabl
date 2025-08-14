@@ -75,10 +75,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        override fun onError(error: String) {
+        override fun onError(error: Error) {
             runOnUiThread {
-                Log.e("MainActivity", "Interaction error: $error")
-                uiComponents.conversationRenderer.showError(Error.LlmError(error))
+                uiComponents.conversationRenderer.showError(error)
             }
         }
     }

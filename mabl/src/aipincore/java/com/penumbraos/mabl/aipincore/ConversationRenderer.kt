@@ -66,11 +66,22 @@ class ConversationRenderer(
         when (error) {
             is Error.TtsError -> {}
             is Error.SttError -> {
+                val lastListenDuration = controllers.stt.lastListenDuration()
+                if (lastListenDuration != null && lastListenDuration < 2000) {
+                    // Assume this wasn't a real query
+                    return
+                }
                 controllers.tts.service?.speakImmediately("Sorry, I could not hear you")
                 statusBroadcaster?.sendSTTErrorEvent(error.message, "conversationRenderer")
             }
 
             is Error.LlmError -> {
+                controllers.tts.service?.speakImmediately("Failed to talk to LLM")
+                statusBroadcaster?.sendLLMErrorEvent(error.message)
+                statusBroadcaster?.sendErrorStatus(error.message)
+            }
+
+            is Error.FlowError -> {
                 controllers.tts.service?.speakImmediately("Failed to talk to LLM")
                 statusBroadcaster?.sendLLMErrorEvent(error.message)
                 statusBroadcaster?.sendErrorStatus(error.message)

@@ -4,6 +4,7 @@ import android.util.Log
 import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.services.AllControllers
+import com.penumbraos.mabl.types.Error
 
 private const val TAG = "InteractionFlowManager"
 
@@ -34,7 +35,7 @@ class InteractionFlowManager(
         override fun onError(errorMessage: String) {
             Log.e(TAG, "STT Error: $errorMessage")
             setState(InteractionFlowState.IDLE)
-            stateCallback?.onError("Speech recognition error: $errorMessage")
+            stateCallback?.onError(Error.SttError(errorMessage))
         }
     }
 
@@ -54,14 +55,14 @@ class InteractionFlowManager(
             setState(InteractionFlowState.LISTENING)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start listening: ${e.message}")
-            stateCallback?.onError("Failed to start listening: ${e.message}")
+            stateCallback?.onError(Error.SttError("Failed to start listening: ${e.message}"))
         }
     }
 
     override fun startConversationFromInput(userInput: String) {
         if (conversationManager == null) {
             Log.w(TAG, "No conversation manager set, cannot process input: $userInput")
-            stateCallback?.onError("No active conversation")
+            stateCallback?.onError(Error.FlowError("No active conversation"))
             return
         }
 
@@ -89,7 +90,7 @@ class InteractionFlowManager(
                 override fun onError(error: String) {
                     Log.e(TAG, "Conversation error: $error")
                     setState(InteractionFlowState.IDLE)
-                    stateCallback?.onError("Conversation error: $error")
+                    stateCallback?.onError(Error.LlmError("Conversation error: $error"))
                 }
             }
         )
