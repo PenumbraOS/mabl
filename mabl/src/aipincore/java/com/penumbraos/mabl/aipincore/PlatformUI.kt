@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -159,7 +158,7 @@ fun ConversationDisplayPreview() {
         Message(1, "Hello!", true),
         Message(
             2,
-            "Next week in Seoul, expect showers on Thursday morning with temperatures ranging from",
+            "Next week in Seoul, expect showers on Thursday morning with temperatures ranging from 25 to 30 degrees. It will be sunny the rest of the week.",
             false
         )
     )
