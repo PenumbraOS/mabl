@@ -117,20 +117,6 @@ class MainActivity : ComponentActivity() {
 
         controllers.initialize(this)
 
-        enableEdgeToEdge()
-
-        setContent {
-            MABLTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Content()
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-
         initializeUIComponents()
 
         lifecycleScope.launch {
@@ -150,6 +136,16 @@ class MainActivity : ComponentActivity() {
             )
 
             Log.d("MainActivity", "Centralized interaction flow initialized")
+        }
+
+        enableEdgeToEdge()
+
+        setContent {
+            MABLTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Content()
+                }
+            }
         }
     }
 
