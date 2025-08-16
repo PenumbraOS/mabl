@@ -14,6 +14,6 @@ class UIFactory(
     private val statusBroadcaster = SettingsStatusBroadcaster(context, coroutineScope)
 
     override fun createPlatformInputHandler(): IPlatformInputHandler {
-        return SimulatorInputHandler(context, statusBroadcaster)
+        return SimulatorInputHandler(statusBroadcaster, createPlatformCapabilities())
     }
 }

@@ -1,14 +1,17 @@
 package com.penumbraos.mabl.simulation
 
 import android.view.MotionEvent
+import android.view.KeyEvent
 import androidx.compose.foundation.background
 import com.penumbraos.mabl.ui.SimulatorEventRouter
+import com.penumbraos.mabl.ui.SimulatorKeyEventRouter
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -195,6 +198,48 @@ fun SimulatedTouchpad(
             }
         }
         
+        // Control buttons
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Back button
+            Button(
+                onClick = {
+                    // Send back button key event (key code 36)
+                    val keyEvent = KeyEvent(KeyEvent.ACTION_DOWN, 36)
+                    SimulatorKeyEventRouter.instance?.onSimulatorKeyEvent(36, keyEvent)
+                },
+                modifier = Modifier.size(48.dp),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            // Menu button
+            Button(
+                onClick = {
+                    // Send menu button key event (key code 54)
+                    val keyEvent = KeyEvent(KeyEvent.ACTION_DOWN, 54)
+                    SimulatorKeyEventRouter.instance?.onSimulatorKeyEvent(54, keyEvent)
+                },
+                modifier = Modifier.size(48.dp),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        
         // Gesture instructions
         Text(
             text = "• Tap: Voice activation\n• Hold: Long press\n• Drag: Swipe gesture",
@@ -202,7 +247,7 @@ fun SimulatedTouchpad(
             color = Color.Gray,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(8.dp)
+                .padding(bottom = 70.dp, start = 8.dp, end = 8.dp)
         )
     }
 }

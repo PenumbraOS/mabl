@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
+import com.penumbraos.mabl.ui.interfaces.IPlatformCapabilities
 import kotlinx.coroutines.CoroutineScope
 
 class UIFactory(
@@ -21,10 +22,15 @@ class UIFactory(
         return AndroidPlatformInputHandler()
     }
 
+    fun createPlatformCapabilities(): IPlatformCapabilities {
+        return object : IPlatformCapabilities {}
+    }
+
     fun createUIComponents(): UIComponents {
         return UIComponents(
             conversationRenderer = createConversationRenderer(),
             platformInputHandler = createPlatformInputHandler(),
+            platformCapabilities = createPlatformCapabilities()
         )
     }
 }

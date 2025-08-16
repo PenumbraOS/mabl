@@ -2,6 +2,7 @@ package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import android.util.Log
+import android.view.KeyEvent
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
@@ -10,15 +11,16 @@ import com.penumbraos.mabl.aipincore.input.TouchpadGestureManager
 import com.penumbraos.mabl.interaction.IInteractionFlowManager
 import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import com.penumbraos.sdk.PenumbraClient
+import com.penumbraos.sdk.api.types.HandGestureReceiver
+import kotlinx.coroutines.launch
 
-private const val TAG = "TouchpadGestureHandler"
 
-open class TouchpadGestureHandler(
-    private val context: Context,
+private const val TAG = "PlatformInputHandler"
+
+open class PlatformInputHandler(
     private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IPlatformInputHandler {
-    private var isListening = false
-    private val client = PenumbraClient(context)
+    private lateinit var client: PenumbraClient
     internal lateinit var touchpadGestureManager: TouchpadGestureManager
 
     private lateinit var interactionFlowManager: IInteractionFlowManager
@@ -28,7 +30,21 @@ open class TouchpadGestureHandler(
         lifecycleScope: LifecycleCoroutineScope,
         interactionFlowManager: IInteractionFlowManager
     ) {
+        this.client = PenumbraClient(context)
         this.interactionFlowManager = interactionFlowManager
+
+        lifecycleScope.launch {
+            client.waitForBridge()
+            client.handGesture.register(object : HandGestureReceiver {
+                override fun onHandClose() {
+                    handleClosedHandGesture()
+                }
+
+                override fun onHandPush() {
+                    handleHandToggledMenuLayer()
+                }
+            })
+        }
 
         this.touchpadGestureManager = TouchpadGestureManager(
             context,
@@ -67,13 +83,27 @@ open class TouchpadGestureHandler(
             })
     }
 
-    fun startListening() {
-        interactionFlowManager.startListening()
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            36 -> {
+                handleClosedHandGesture()
+                true
+            }
+
+            54 -> {
+                handleHandToggledMenuLayer()
+                true
+            }
+//            52 -> handleHandToggledMainLayer()
+            else -> false
+        }
     }
 
-    fun stopListening() {
-        if (interactionFlowManager.isFlowActive()) {
-            interactionFlowManager.cancelCurrentFlow()
-        }
+    private fun handleClosedHandGesture() {
+        Log.i(TAG, "Closed hand gesture")
+    }
+
+    protected open fun handleHandToggledMenuLayer() {
+        Log.i(TAG, "Toggled menu layer")
     }
 }

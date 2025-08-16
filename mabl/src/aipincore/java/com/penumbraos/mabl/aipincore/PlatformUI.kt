@@ -5,9 +5,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.open.pin.ui.PinTheme
+import com.open.pin.ui.components.button.PinCircularButton
 import com.open.pin.ui.components.views.ListView
+import com.open.pin.ui.components.views.RadialView
+import com.open.pin.ui.components.views.RadialViewParams
 import com.open.pin.ui.theme.PinColors
 import com.open.pin.ui.theme.PinFonts
 import com.open.pin.ui.theme.PinTypography
@@ -39,9 +49,8 @@ import com.penumbraos.mabl.ui.UIComponents
 fun PlatformUI(uiComponents: UIComponents) {
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
-    val repository = remember { MessageRepository(database.messageDao()) }
-    val messages = repository.getAllMessages().collectAsState(initial = emptyList())
     val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
+    val viewModel = remember { PlatformViewModel() }
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
@@ -51,9 +60,29 @@ fun PlatformUI(uiComponents: UIComponents) {
                     TouchInterceptor(snapCoordinator.value, context)
                 }
             )
-            ConversationDisplay(messages = messages.value)
+            PinMainView(uiComponents, database, viewModel)
         }
     }
+}
+
+@Composable
+fun PinMainView(uiComponents: UIComponents, database: AppDatabase, viewModel: PlatformViewModel) {
+    val menuVisible by viewModel.menuVisibleState.collectAsState()
+
+    val repository = remember { MessageRepository(database.messageDao()) }
+    val messages = repository.getAllMessages().collectAsState(initial = emptyList())
+
+    if (menuVisible) {
+        RadialView(RadialViewParams(), Modifier, {
+            PinCircularButton({}, icon = Icons.Default.Home)
+            PinCircularButton({}, icon = Icons.Default.Email)
+            PinCircularButton({}, icon = Icons.Default.Call)
+            PinCircularButton({}, icon = Icons.Default.Notifications)
+            PinCircularButton({}, icon = Icons.Default.Settings)
+        })
+    }
+
+    ConversationDisplay(messages = messages.value)
 }
 
 @Composable
