@@ -1,4 +1,4 @@
-package com.penumbraos.mabl.ui
+package com.penumbraos.mabl.aipincore.view
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

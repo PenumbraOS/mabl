@@ -39,6 +39,7 @@ import com.open.pin.ui.theme.PinTypography
 import com.open.pin.ui.utils.PinDimensions
 import com.open.pin.ui.utils.modifiers.ProvideSnapCoordinator
 import com.open.pin.ui.utils.modifiers.SnapCoordinator
+import com.penumbraos.mabl.aipincore.view.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.TouchInterceptor
 import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.Message
