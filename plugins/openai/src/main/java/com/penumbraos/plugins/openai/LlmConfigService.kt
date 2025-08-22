@@ -77,8 +77,17 @@ class LlmConfigService : ILlmConfigService {
         return try {
             if (configFile.exists()) {
                 val jsonString = configFile.readText()
-                Log.d(TAG, "Loading configs from file: $jsonString")
                 val configFile = json.decodeFromString<LlmConfigFile>(jsonString)
+                val logMap = configFile.configs.map { config ->
+                    """
+                        Name: ${config.name}
+                        Model: ${config.model}
+                        Base URL: ${config.baseUrl}
+                        Max Tokens: ${config.maxTokens}
+                        Temperature: ${config.temperature}
+                    """.trimIndent()
+                }
+                Log.d(TAG, "Loading configs from file: ${logMap.joinToString("\n\n")}")
                 configFile.configs
             } else {
                 Log.d(TAG, "Config file does not exist. Returning empty configs")
