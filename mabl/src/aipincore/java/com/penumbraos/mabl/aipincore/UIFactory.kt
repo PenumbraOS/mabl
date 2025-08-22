@@ -22,7 +22,7 @@ open class UIFactory(
     }
 
     open fun createPlatformInputHandler(): IPlatformInputHandler {
-        return PlatformInputHandler(statusBroadcaster)
+        return PlatformInputHandler(statusBroadcaster, viewModel)
     }
 
     open fun createPlatformCapabilities(): IPlatformCapabilities {

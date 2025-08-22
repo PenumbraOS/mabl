@@ -8,6 +8,7 @@ import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureKind
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureManager
+import com.penumbraos.mabl.aipincore.view.PlatformViewModel
 import com.penumbraos.mabl.interaction.IInteractionFlowManager
 import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import com.penumbraos.sdk.PenumbraClient
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 private const val TAG = "PlatformInputHandler"
 
 open class PlatformInputHandler(
-    private val statusBroadcaster: SettingsStatusBroadcaster? = null
+    private val statusBroadcaster: SettingsStatusBroadcaster,
+    private val viewModel: PlatformViewModel
 ) : IPlatformInputHandler {
     private lateinit var client: PenumbraClient
     internal lateinit var touchpadGestureManager: TouchpadGestureManager
@@ -77,7 +79,7 @@ open class PlatformInputHandler(
                     } else {
                         "${gesture.kind.name}_SINGLE"
                     }
-                    statusBroadcaster?.sendTouchpadTapEvent(eventName, gesture.duration.toInt())
+                    statusBroadcaster.sendTouchpadTapEvent(eventName, gesture.duration.toInt())
                     Log.w(TAG, "Touchpad gesture: $gesture")
                 }
             })
@@ -100,10 +102,10 @@ open class PlatformInputHandler(
     }
 
     private fun handleClosedHandGesture() {
-        Log.i(TAG, "Closed hand gesture")
+        viewModel.backGesture()
     }
 
     protected open fun handleHandToggledMenuLayer() {
-        Log.i(TAG, "Toggled menu layer")
+        viewModel.toggleMenuVisible()
     }
 }

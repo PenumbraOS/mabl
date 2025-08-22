@@ -1,5 +1,9 @@
 package com.penumbraos.mabl.aipincore
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,47 +58,72 @@ fun PlatformUI(uiComponents: UIComponents) {
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
     val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
-    val viewModel = remember { PlatformViewModel() }
+    val viewModel = uiComponents.platformCapabilities.getViewModel() as? PlatformViewModel
+        ?: remember { PlatformViewModel() }
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    TouchInterceptor(snapCoordinator.value, context)
-                }
-            )
-            PinMainView(uiComponents, database, viewModel)
+            Box {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        TouchInterceptor(snapCoordinator.value, context)
+                    }
+                )
+                PinMainView(modifier = Modifier, uiComponents, database, viewModel)
+            }
         }
     }
 }
 
 @Composable
-fun PinMainView(uiComponents: UIComponents, database: AppDatabase, viewModel: PlatformViewModel) {
+fun PinMainView(
+    modifier: Modifier = Modifier,
+    uiComponents: UIComponents,
+    database: AppDatabase,
+    viewModel: PlatformViewModel
+) {
     val menuVisible by viewModel.menuVisibleState.collectAsState()
+
+    val animatedRadius by animateDpAsState(
+        targetValue = if (menuVisible) 150.dp else 300.dp,
+        label = "animatedRadius"
+    )
 
     val repository = remember { MessageRepository(database.messageDao()) }
     val messages = repository.getAllMessages().collectAsState(initial = emptyList())
 
-    if (menuVisible) {
-        RadialView(RadialViewParams(), Modifier, {
-            PinCircularButton({}, icon = Icons.Default.Home)
-            PinCircularButton({}, icon = Icons.Default.Email)
-            PinCircularButton({}, icon = Icons.Default.Call)
-            PinCircularButton({}, icon = Icons.Default.Notifications)
-            PinCircularButton({}, icon = Icons.Default.Settings)
-        })
-    }
-
     ConversationDisplay(messages = messages.value)
+    AnimatedVisibility(
+        visible = menuVisible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        RadialView(
+            Modifier
+                .fillMaxSize()
+                .background(color = Color(0f, 0f, 0f, 0.9f)),
+            RadialViewParams(radius = animatedRadius),
+            listOf(
+                Icons.Default.Home,
+                Icons.Default.Email,
+                Icons.Default.Call,
+                Icons.Default.Notifications,
+                Icons.Default.Settings
+            )
+        ) { icon ->
+            PinCircularButton({}, icon = icon)
+        }
+    }
 }
 
 @Composable
 fun ConversationDisplay(
+    modifier: Modifier = Modifier,
     messages: List<Message>,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(color = PinTheme.colors.background)
     ) {
