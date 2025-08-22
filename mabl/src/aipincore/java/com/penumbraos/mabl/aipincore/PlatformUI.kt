@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.aipincore
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -24,10 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,14 +61,13 @@ fun PlatformUI(uiComponents: UIComponents) {
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
-            Box {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // For some very strange reason things on the bottom are higher z-index
+                PinMainView(uiComponents, database, viewModel)
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        TouchInterceptor(snapCoordinator.value, context)
-                    }
+                    factory = { context -> TouchInterceptor(snapCoordinator.value, context) }
                 )
-                PinMainView(modifier = Modifier, uiComponents, database, viewModel)
             }
         }
     }
@@ -78,7 +75,6 @@ fun PlatformUI(uiComponents: UIComponents) {
 
 @Composable
 fun PinMainView(
-    modifier: Modifier = Modifier,
     uiComponents: UIComponents,
     database: AppDatabase,
     viewModel: PlatformViewModel
@@ -112,7 +108,9 @@ fun PinMainView(
                 Icons.Default.Settings
             )
         ) { icon ->
-            PinCircularButton({}, icon = icon)
+            PinCircularButton({
+                Log.d("PinMainView", "Button clicked")
+            }, icon = icon)
         }
     }
 }
