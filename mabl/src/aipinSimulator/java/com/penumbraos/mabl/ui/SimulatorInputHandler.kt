@@ -2,18 +2,20 @@ package com.penumbraos.mabl.ui
 
 import android.content.Context
 import android.util.Log
-import android.view.MotionEvent
 import android.view.KeyEvent
+import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.SettingsStatusBroadcaster
+import com.penumbraos.mabl.aipincore.view.PlatformViewModel
 import com.penumbraos.mabl.interaction.IInteractionFlowManager
 
 private const val TAG = "SimulatorInputHandler"
 
 class SimulatorInputHandler(
-    statusBroadcaster: SettingsStatusBroadcaster? = null,
+    statusBroadcaster: SettingsStatusBroadcaster,
+    private val viewModel: PlatformViewModel,
     private val platformCapabilities: com.penumbraos.mabl.ui.interfaces.IPlatformCapabilities
-) : com.penumbraos.mabl.aipincore.PlatformInputHandler(statusBroadcaster),
+) : com.penumbraos.mabl.aipincore.PlatformInputHandler(statusBroadcaster, viewModel),
     SimulatorEventRouter.TouchpadEventHandler,
     SimulatorKeyEventRouter.KeyEventHandler,
     SimulatorSttRouter.SttEventHandler {
