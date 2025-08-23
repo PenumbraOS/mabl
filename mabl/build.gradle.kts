@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.penumbraos.mabl"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.penumbraos.mabl"
         minSdk = 32
-        targetSdk = 35
+        targetSdk = 36
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
         versionName = project.findProperty("versionName") as String? ?: "1.0"
 
@@ -76,6 +76,8 @@ android {
 dependencies {
     implementation(project(":sdk"))
     implementation(libs.penumbraos.sdk)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
     "aipinImplementation"(libs.moonlight.ui)
     "aipinSimulatorImplementation"(libs.moonlight.ui)
 

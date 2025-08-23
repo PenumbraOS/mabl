@@ -6,7 +6,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.SettingsStatusBroadcaster
-import com.penumbraos.mabl.aipincore.view.PlatformViewModel
+import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.interaction.IInteractionFlowManager
 
 private const val TAG = "SimulatorInputHandler"
@@ -63,6 +63,5 @@ class SimulatorInputHandler(
 
     override fun handleHandToggledMenuLayer() {
         super.handleHandToggledMenuLayer()
-        platformCapabilities.toggleMenu()
     }
 }

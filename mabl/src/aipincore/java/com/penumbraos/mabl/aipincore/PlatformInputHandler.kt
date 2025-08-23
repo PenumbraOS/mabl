@@ -8,7 +8,7 @@ import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureKind
 import com.penumbraos.mabl.aipincore.input.TouchpadGestureManager
-import com.penumbraos.mabl.aipincore.view.PlatformViewModel
+import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.interaction.IInteractionFlowManager
 import com.penumbraos.mabl.ui.interfaces.IPlatformInputHandler
 import com.penumbraos.sdk.PenumbraClient
