@@ -72,7 +72,11 @@ fun PlatformUI(uiComponents: UIComponents) {
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = PinTheme.colors.background)
+            ) {
                 // For some very strange reason things on the bottom are higher z-index
                 Navigation()
                 AndroidView(
