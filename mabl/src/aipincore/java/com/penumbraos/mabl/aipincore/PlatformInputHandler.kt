@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 
 
 private const val TAG = "PlatformInputHandler"
+private const val HAND_GESTURE_COOLDOWN_MS = 500L
 
 open class PlatformInputHandler(
     private val statusBroadcaster: SettingsStatusBroadcaster,
@@ -26,6 +27,8 @@ open class PlatformInputHandler(
     internal lateinit var touchpadGestureManager: TouchpadGestureManager
 
     private lateinit var interactionFlowManager: IInteractionFlowManager
+
+    private var lastHandGestureTime = 0L
 
     override fun setup(
         context: Context,
@@ -88,17 +91,32 @@ open class PlatformInputHandler(
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
             36 -> {
-                handleClosedHandGesture()
+                if (checkHandGestureCooldown()) {
+                    handleClosedHandGesture()
+                }
                 true
             }
 
             54 -> {
-                handleHandToggledMenuLayer()
+                if (checkHandGestureCooldown()) {
+                    handleHandToggledMenuLayer()
+                }
                 true
             }
 //            52 -> handleHandToggledMainLayer()
             else -> false
         }
+    }
+
+    private fun checkHandGestureCooldown(): Boolean {
+        val currentTime = System.currentTimeMillis()
+
+        if (currentTime - lastHandGestureTime < HAND_GESTURE_COOLDOWN_MS) {
+            return false
+        }
+
+        lastHandGestureTime = currentTime
+        return true
     }
 
     private fun handleClosedHandGesture() {

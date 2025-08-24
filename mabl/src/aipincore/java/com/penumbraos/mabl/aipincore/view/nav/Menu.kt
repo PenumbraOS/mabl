@@ -23,9 +23,11 @@ import com.open.pin.ui.components.views.RadialViewParams
 import com.open.pin.ui.debug.AiPinPreview
 import com.penumbraos.mabl.R
 import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
+import com.penumbraos.mabl.aipincore.view.model.DummyNav
 import com.penumbraos.mabl.aipincore.view.model.HomeNav
 import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
+import com.penumbraos.mabl.aipincore.view.model.SettingsNav
 
 data class MenuItem(val icon: ImageVector, val view: Any, val enabled: Boolean = false)
 
@@ -38,9 +40,9 @@ fun Menu(navViewModel: NavViewModel = viewModel<NavViewModel>(), animatedRadius:
             ConversationsNav,
             enabled = true
         ),
-        MenuItem(Icons.Default.Call, HomeNav),
-        MenuItem(Icons.Default.Notifications, HomeNav),
-        MenuItem(Icons.Default.Settings, HomeNav)
+        MenuItem(Icons.Default.Call, DummyNav),
+        MenuItem(Icons.Default.Notifications, DummyNav),
+        MenuItem(Icons.Default.Settings, SettingsNav, enabled = true)
     )
 
     RadialView(

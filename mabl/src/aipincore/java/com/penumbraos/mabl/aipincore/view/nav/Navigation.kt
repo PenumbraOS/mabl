@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.aipincore.view.nav
 
+import Settings
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.TweenSpec
@@ -23,6 +24,7 @@ import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
 import com.penumbraos.mabl.aipincore.view.model.HomeNav
 import com.penumbraos.mabl.aipincore.view.model.MenuNav
 import com.penumbraos.mabl.aipincore.view.model.NavViewModel
+import com.penumbraos.mabl.aipincore.view.model.SettingsNav
 import com.penumbraos.mabl.aipincore.view.nav.util.WithMenuSceneStrategy
 
 val animationSpec = tween<Any>(durationMillis = 300)
@@ -66,6 +68,10 @@ fun Navigation(navViewModel: NavViewModel = viewModel<NavViewModel>()) {
 
                 ConversationsNav -> NavEntry(key) {
                     Conversations()
+                }
+
+                SettingsNav -> NavEntry(key) {
+                    Settings()
                 }
 
                 else -> NavEntry(Unit) {

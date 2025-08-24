@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 data object HomeNav
 data object MenuNav
 data object ConversationsNav
+data object SettingsNav
+data object DummyNav
 
 class NavViewModel() : ViewModel() {
     val backStack = mutableStateListOf<Any>(HomeNav)
@@ -14,9 +16,15 @@ class NavViewModel() : ViewModel() {
         backStack.add(view)
     }
 
+    fun popView() {
+        if (backStack.size > 1) {
+            backStack.removeLastOrNull()
+        }
+    }
+
     fun replaceLastView(view: Any) {
         if (backStack.size > 1) {
-            backStack.removeAt(backStack.lastIndex)
+            backStack.removeLastOrNull()
         }
         backStack.add(view)
     }
