@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.aipincore.view.nav
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,17 +24,20 @@ import com.open.pin.ui.debug.AiPinPreview
 import com.penumbraos.mabl.R
 import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
 import com.penumbraos.mabl.aipincore.view.model.HomeNav
+import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 
-data class MenuItem(val icon: ImageVector, val view: Any)
+data class MenuItem(val icon: ImageVector, val view: Any, val enabled: Boolean = false)
 
 @Composable
-fun Menu(animatedRadius: Dp) {
-    val viewModel = viewModel<PlatformViewModel>()
-
+fun Menu(navViewModel: NavViewModel = viewModel<NavViewModel>(), animatedRadius: Dp) {
     val menuItems = listOf(
-        MenuItem(Icons.Default.Home, HomeNav),
-        MenuItem(ImageVector.vectorResource(R.drawable.outline_voice_chat_24), ConversationsNav),
+        MenuItem(Icons.Default.Home, HomeNav, enabled = true),
+        MenuItem(
+            ImageVector.vectorResource(R.drawable.outline_voice_chat_24),
+            ConversationsNav,
+            enabled = true
+        ),
         MenuItem(Icons.Default.Call, HomeNav),
         MenuItem(Icons.Default.Notifications, HomeNav),
         MenuItem(Icons.Default.Settings, HomeNav)
@@ -49,16 +53,17 @@ fun Menu(animatedRadius: Dp) {
         PinCircularButton({
             Log.d("Menu", "Navigating to ${item.view}")
             if (item.view == HomeNav) {
-                viewModel.navViewModel.jumpHome()
+                navViewModel.jumpHome()
             } else {
-                viewModel.navViewModel.replaceLastView(item.view)
+                navViewModel.replaceLastView(item.view)
             }
-        }, icon = item.icon)
+        }, icon = item.icon, enabled = item.enabled)
     }
 }
 
+@SuppressLint("ViewModelConstructorInComposable")
 @AiPinPreview
 @Composable
 fun MenuPreview() {
-    Menu(animatedRadius = 150.dp)
+    Menu(navViewModel = NavViewModel(), animatedRadius = 150.dp)
 }

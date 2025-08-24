@@ -22,17 +22,14 @@ import com.open.pin.ui.components.text.PinText
 import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
 import com.penumbraos.mabl.aipincore.view.model.HomeNav
 import com.penumbraos.mabl.aipincore.view.model.MenuNav
-import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
+import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.nav.util.WithMenuSceneStrategy
 
 val animationSpec = tween<Any>(durationMillis = 300)
 
 @Suppress("UNCHECKED_CAST")
 @Composable
-fun Navigation() {
-    val viewModel = viewModel<PlatformViewModel>()
-    val navViewModel = viewModel.navViewModel
-
+fun Navigation(navViewModel: NavViewModel = viewModel<NavViewModel>()) {
     NavDisplay(
         backStack = navViewModel.backStack,
         onBack = { navViewModel.backStack.removeLastOrNull() },
@@ -64,7 +61,7 @@ fun Navigation() {
                         menuVisible.value = true
                     }
 
-                    Menu(animatedRadius)
+                    Menu(animatedRadius = animatedRadius)
                 }
 
                 ConversationsNav -> NavEntry(key) {

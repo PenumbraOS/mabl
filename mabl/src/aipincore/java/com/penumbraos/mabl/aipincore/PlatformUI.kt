@@ -33,6 +33,7 @@ import com.open.pin.ui.utils.PinDimensions
 import com.open.pin.ui.utils.modifiers.ProvideSnapCoordinator
 import com.open.pin.ui.utils.modifiers.SnapCoordinator
 import com.penumbraos.mabl.aipincore.view.TouchInterceptor
+import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
 import com.penumbraos.mabl.data.AppDatabase
@@ -52,6 +53,12 @@ fun PlatformUI(uiComponents: UIComponents) {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
             return actualViewModel as T
+        }
+    })
+    viewModel<NavViewModel>(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return actualViewModel.navViewModel as T
         }
     })
 
