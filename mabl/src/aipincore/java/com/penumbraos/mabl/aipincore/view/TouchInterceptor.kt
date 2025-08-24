@@ -23,11 +23,12 @@ class TouchInterceptor(
         background = null
     }
 
-    override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             snapCoordinator.processTouchEvent(event)
         }
-        return super.dispatchTouchEvent(event)
+        return false
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent?): Boolean {

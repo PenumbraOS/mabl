@@ -6,12 +6,12 @@ import com.penumbraos.mabl.data.AppDatabase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 
-class PlatformViewModel(database: AppDatabase) : ViewModel() {
-    val navViewModel = NavViewModel(database)
+class PlatformViewModel(val database: AppDatabase) : ViewModel() {
+    val navViewModel = NavViewModel()
 
     private val _backChannel = Channel<Unit>(Channel.RENDEZVOUS)
     val backEvent = _backChannel.receiveAsFlow()
-    
+
     fun backGesture() {
         Log.d("PlatformViewModel", "Back gesture received")
         _backChannel.trySend(Unit)

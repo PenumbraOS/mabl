@@ -1,13 +1,11 @@
 package com.penumbraos.mabl.aipincore
 
-import android.util.Log
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,16 +13,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.open.pin.ui.PinTheme
+import com.open.pin.ui.components.text.PinText
 import com.open.pin.ui.components.views.ListView
 import com.open.pin.ui.theme.PinColors
 import com.open.pin.ui.theme.PinFonts
@@ -45,13 +45,29 @@ fun PlatformUI(uiComponents: UIComponents) {
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
     val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
-    val viewModel = uiComponents.platformCapabilities.getViewModel() as PlatformViewModel
+    val actualViewModel = uiComponents.platformCapabilities.getViewModel() as PlatformViewModel
+
+    // Push view model into owner
+    viewModel<PlatformViewModel>(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return actualViewModel as T
+        }
+    })
+
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current
+
+    LaunchedEffect(Unit) {
+        actualViewModel.backEvent.collect {
+            backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+        }
+    }
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // For some very strange reason things on the bottom are higher z-index
-                Navigation(viewModel.navViewModel)
+                Navigation()
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context -> TouchInterceptor(snapCoordinator.value, context) }
@@ -146,27 +162,6 @@ fun MessageItem(
             modifier = Modifier.padding(top = 4.dp)
         )
     }
-}
-
-@Composable
-fun PinText(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = PinColors.primary,
-    style: TextStyle = PinTypography.bodyLarge,
-    textAlign: TextAlign? = null,
-    overflow: TextOverflow = TextOverflow.Clip,
-    maxLines: Int = Int.MAX_VALUE
-) {
-    Text(
-        text = text,
-        modifier = modifier,
-        color = color,
-        style = style,
-        textAlign = textAlign,
-        overflow = overflow,
-        maxLines = maxLines
-    )
 }
 
 @Preview(widthDp = 800, heightDp = 720)
