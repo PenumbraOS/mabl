@@ -1,20 +1,52 @@
 package com.penumbraos.mabl.aipincore.view.model
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.penumbraos.mabl.aipincore.SETTING_APP_ID
+import com.penumbraos.mabl.aipincore.SETTING_DEBUG_CATEGORY
+import com.penumbraos.mabl.aipincore.SETTING_DEBUG_CURSOR
 import com.penumbraos.mabl.data.AppDatabase
+import com.penumbraos.sdk.PenumbraClient
+import com.penumbraos.sdk.api.BooleanSettingListener
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 
-class PlatformViewModel(val database: AppDatabase) : ViewModel() {
+class PlatformViewModel(
+    coroutineScope: CoroutineScope,
+    context: Context,
+    val database: AppDatabase
+) : ViewModel() {
     val navViewModel = NavViewModel()
 
-    private val _backChannel = Channel<Unit>(Channel.RENDEZVOUS)
-    val backEvent = _backChannel.receiveAsFlow()
+    private val _backGestureChannel = Channel<Unit>(Channel.RENDEZVOUS)
+    val backGestureEvent = _backGestureChannel.receiveAsFlow()
+
+    private val _debugChannel = Channel<Boolean>()
+    val debugChannel = _debugChannel.receiveAsFlow()
+
+    init {
+        coroutineScope.launch {
+            val client = PenumbraClient(context)
+            client.waitForBridge()
+            client.settings.addBooleanListener(
+                SETTING_APP_ID,
+                SETTING_DEBUG_CATEGORY,
+                SETTING_DEBUG_CURSOR,
+                object : BooleanSettingListener {
+                    override fun onSettingChanged(value: Boolean) {
+                        Log.d("PlatformViewModel", "Debug cursor setting changed to $value")
+                        _debugChannel.trySend(value)
+                    }
+                })
+        }
+    }
 
     fun backGesture() {
         Log.d("PlatformViewModel", "Back gesture received")
-        _backChannel.trySend(Unit)
+        _backGestureChannel.trySend(Unit)
     }
 
     fun toggleMenuVisible() {

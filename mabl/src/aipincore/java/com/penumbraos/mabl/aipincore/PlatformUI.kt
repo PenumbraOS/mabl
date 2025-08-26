@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.open.pin.ui.PinTheme
 import com.open.pin.ui.components.text.PinText
 import com.open.pin.ui.components.views.ListView
+import com.open.pin.ui.debug.VoronoiVisualizer
 import com.open.pin.ui.theme.PinColors
 import com.open.pin.ui.theme.PinFonts
 import com.open.pin.ui.theme.PinTypography
@@ -48,6 +49,8 @@ fun PlatformUI(uiComponents: UIComponents) {
     val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
     val actualViewModel = uiComponents.platformCapabilities.getViewModel() as PlatformViewModel
 
+    var displayDebugView = remember { mutableStateOf(false) }
+
     // Push view model into owner
     viewModel<PlatformViewModel>(factory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -65,8 +68,14 @@ fun PlatformUI(uiComponents: UIComponents) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current
 
     LaunchedEffect(Unit) {
-        actualViewModel.backEvent.collect {
+        actualViewModel.backGestureEvent.collect {
             backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        actualViewModel.debugChannel.collect {
+            displayDebugView.value = it
         }
     }
 
@@ -79,6 +88,11 @@ fun PlatformUI(uiComponents: UIComponents) {
             ) {
                 // For some very strange reason things on the bottom are higher z-index
                 Navigation()
+                if (displayDebugView.value) {
+                    VoronoiVisualizer(
+                        alpha = 0.4f
+                    )
+                }
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context -> TouchInterceptor(snapCoordinator.value, context) }

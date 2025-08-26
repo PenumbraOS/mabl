@@ -16,7 +16,8 @@ open class UIFactory(
     private val controllers: AllControllers,
 ) {
     private val statusBroadcaster = SettingsStatusBroadcaster(context, coroutineScope)
-    internal val viewModel = PlatformViewModel(AppDatabase.getDatabase(context))
+    internal val viewModel =
+        PlatformViewModel(coroutineScope, context, AppDatabase.getDatabase(context))
 
     fun createConversationRenderer(): IConversationRenderer {
         return ConversationRenderer(context, controllers, statusBroadcaster)

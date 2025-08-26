@@ -9,12 +9,15 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "SettingsStatusBroadcaster"
 
+const val SETTING_APP_ID = "com.penumbraos.mabl"
+const val SETTING_DEBUG_CATEGORY = "debug"
+const val SETTING_DEBUG_CURSOR = "debugCursor"
+
 class SettingsStatusBroadcaster(
     private val context: Context,
     private val coroutineScope: CoroutineScope
 ) {
     private var settingsClient: SettingsClient? = null
-    private val appId = "com.penumbraos.mabl"
 
     init {
         initializeSettingsClient()
@@ -26,6 +29,11 @@ class SettingsStatusBroadcaster(
                 val client = PenumbraClient(context)
                 client.waitForBridge()
                 settingsClient = client.settings
+                settingsClient?.registerSettings(SETTING_APP_ID) {
+                    category(SETTING_DEBUG_CATEGORY) {
+                        booleanSetting(SETTING_DEBUG_CURSOR, false)
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize MABLStatusBroadcaster", e)
             }
@@ -35,7 +43,7 @@ class SettingsStatusBroadcaster(
     // Conversation Status Updates
     fun sendTranscribingStatus(partialText: String) {
         settingsClient?.sendStatusUpdate(
-            appId, "conversation", mapOf(
+            SETTING_APP_ID, "conversation", mapOf(
                 "state" to "transcribing",
                 "partialText" to partialText
             )
@@ -44,7 +52,7 @@ class SettingsStatusBroadcaster(
 
     fun sendAIThinkingStatus(userMessage: String) {
         settingsClient?.sendStatusUpdate(
-            appId, "conversation", mapOf(
+            SETTING_APP_ID, "conversation", mapOf(
                 "state" to "aiThinking",
                 "userMessage" to userMessage
             )
@@ -53,7 +61,7 @@ class SettingsStatusBroadcaster(
 
     fun sendAIRespondingStatus(streamingToken: String) {
         settingsClient?.sendStatusUpdate(
-            appId, "conversation", mapOf(
+            SETTING_APP_ID, "conversation", mapOf(
                 "state" to "aiResponding",
                 "streamingToken" to streamingToken
             )
@@ -62,7 +70,7 @@ class SettingsStatusBroadcaster(
 
     fun sendIdleStatus(lastResponse: String) {
         settingsClient?.sendStatusUpdate(
-            appId, "conversation", mapOf(
+            SETTING_APP_ID, "conversation", mapOf(
                 "state" to "idle",
                 "lastResponse" to lastResponse
             )
@@ -71,7 +79,7 @@ class SettingsStatusBroadcaster(
 
     fun sendErrorStatus(errorMessage: String) {
         settingsClient?.sendStatusUpdate(
-            appId, "conversation", mapOf(
+            SETTING_APP_ID, "conversation", mapOf(
                 "state" to "error",
                 "errorMessage" to errorMessage
             )
@@ -81,7 +89,7 @@ class SettingsStatusBroadcaster(
     // Events
     fun sendUserMessageEvent(text: String) {
         settingsClient?.sendEvent(
-            appId, "userMessage", mapOf(
+            SETTING_APP_ID, "userMessage", mapOf(
                 "text" to text
             )
         )
@@ -89,7 +97,7 @@ class SettingsStatusBroadcaster(
 
     fun sendAIResponseEvent(text: String, hasToolCalls: Boolean) {
         settingsClient?.sendEvent(
-            appId, "aiResponse", mapOf(
+            SETTING_APP_ID, "aiResponse", mapOf(
                 "text" to text,
                 "hasToolCalls" to hasToolCalls
             )
@@ -98,7 +106,7 @@ class SettingsStatusBroadcaster(
 
     fun sendTouchpadTapEvent(tapType: String, duration: Int) {
         settingsClient?.sendEvent(
-            appId, "touchpadTap", mapOf(
+            SETTING_APP_ID, "touchpadTap", mapOf(
                 "tapType" to tapType,
                 "duration" to duration
             )
@@ -107,7 +115,7 @@ class SettingsStatusBroadcaster(
 
     fun sendSTTErrorEvent(error: String, source: String = "unknown") {
         settingsClient?.sendEvent(
-            appId, "sttError", mapOf(
+            SETTING_APP_ID, "sttError", mapOf(
                 "error" to error,
                 "source" to source
             )
@@ -116,7 +124,7 @@ class SettingsStatusBroadcaster(
 
     fun sendLLMErrorEvent(error: String) {
         settingsClient?.sendEvent(
-            appId, "llmError", mapOf(
+            SETTING_APP_ID, "llmError", mapOf(
                 "error" to error
             )
         )
