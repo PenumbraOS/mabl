@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.aipincore.view.model
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 
@@ -11,6 +12,10 @@ data object DummyNav
 
 class NavViewModel() : ViewModel() {
     val backStack = mutableStateListOf<Any>(HomeNav)
+    
+    val isMenuOpen = derivedStateOf {
+        backStack.lastOrNull() == MenuNav
+    }
 
     fun pushView(view: Any) {
         backStack.add(view)
