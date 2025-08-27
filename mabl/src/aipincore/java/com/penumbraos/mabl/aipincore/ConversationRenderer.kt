@@ -1,6 +1,8 @@
 package com.penumbraos.mabl.aipincore
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.media.MediaPlayer
 import android.util.Log
 import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.MessageRepository
@@ -10,6 +12,7 @@ import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 private const val TAG = "AiPinConversationRenderer"
 
@@ -18,10 +21,21 @@ class ConversationRenderer(
     private val controllers: AllControllers,
     private val statusBroadcaster: SettingsStatusBroadcaster? = null
 ) : IConversationRenderer {
+    private val listeningMediaPlayer = MediaPlayer()
+
+    @SuppressLint("SdCardPath")
+    private val listeningSoundEffectFile = File("/sdcard/penumbra/mabl/sounds/listening.mp3")
 
     //    val penumbraClient = PenumbraClient(context)
     private val messageRepository: MessageRepository by lazy {
         MessageRepository(AppDatabase.getDatabase(context).messageDao())
+    }
+
+    init {
+        if (listeningSoundEffectFile.exists()) {
+            listeningMediaPlayer.setDataSource(listeningSoundEffectFile.absolutePath)
+            listeningMediaPlayer.prepareAsync()
+        }
     }
 
 //    init {
@@ -59,6 +73,9 @@ class ConversationRenderer(
 
     override fun showListening(isListening: Boolean) {
         Log.d(TAG, "Listening: $isListening")
+        if (isListening && listeningSoundEffectFile.exists()) {
+            listeningMediaPlayer.start()
+        }
     }
 
     override fun showError(error: Error) {
