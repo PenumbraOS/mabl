@@ -41,7 +41,15 @@ class SimulatorInputHandler(
 
     override fun onSimulatorKeyEvent(keyCode: Int, event: KeyEvent?) {
         Log.d(TAG, "Simulator key event received: keyCode=$keyCode")
-        super.onKeyDown(keyCode, event)
+        when (keyCode) {
+            36 -> {
+                handleClosedHandGesture()
+            }
+
+            54 -> {
+                handleHandToggledMenuLayer()
+            }
+        }
     }
 
     override fun onSimulatorManualInput(text: String) {
@@ -59,9 +67,5 @@ class SimulatorInputHandler(
         if (interactionFlowManager.isFlowActive()) {
             interactionFlowManager.cancelCurrentFlow()
         }
-    }
-
-    override fun handleHandToggledMenuLayer() {
-        super.handleHandToggledMenuLayer()
     }
 }

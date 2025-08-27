@@ -2,7 +2,6 @@ package com.penumbraos.mabl
 
 import android.os.Bundle
 import android.util.Log
-import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -148,14 +147,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (uiComponents.platformInputHandler.onKeyDown(keyCode, event)) {
-            return true
-        }
-
-        return super.onKeyDown(keyCode, event)
     }
 
     @Composable

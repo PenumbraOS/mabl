@@ -2,7 +2,6 @@ package com.penumbraos.mabl.aipincore
 
 import android.content.Context
 import android.util.Log
-import android.view.KeyEvent
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
@@ -42,11 +41,15 @@ open class PlatformInputHandler(
             client.waitForBridge()
             client.handGesture.register(object : HandGestureReceiver {
                 override fun onHandClose() {
-                    handleClosedHandGesture()
+                    if (checkHandGestureCooldown()) {
+                        handleClosedHandGesture()
+                    }
                 }
 
                 override fun onHandPush() {
-                    handleHandToggledMenuLayer()
+                    if (checkHandGestureCooldown()) {
+                        handleHandToggledMenuLayer()
+                    }
                 }
             })
         }
@@ -88,26 +91,6 @@ open class PlatformInputHandler(
             })
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            36 -> {
-                if (checkHandGestureCooldown()) {
-                    handleClosedHandGesture()
-                }
-                true
-            }
-
-            54 -> {
-                if (checkHandGestureCooldown()) {
-                    handleHandToggledMenuLayer()
-                }
-                true
-            }
-//            52 -> handleHandToggledMainLayer()
-            else -> false
-        }
-    }
-
     private fun checkHandGestureCooldown(): Boolean {
         val currentTime = System.currentTimeMillis()
 
@@ -119,11 +102,11 @@ open class PlatformInputHandler(
         return true
     }
 
-    private fun handleClosedHandGesture() {
+    fun handleClosedHandGesture() {
         viewModel.backGesture()
     }
 
-    protected open fun handleHandToggledMenuLayer() {
+    fun handleHandToggledMenuLayer() {
         viewModel.toggleMenuVisible()
     }
 }
