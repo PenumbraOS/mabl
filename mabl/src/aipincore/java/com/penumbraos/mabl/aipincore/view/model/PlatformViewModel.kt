@@ -50,11 +50,19 @@ class PlatformViewModel(
     }
 
     fun toggleMenuVisible() {
-        Log.d("PlatformViewModel", "Toggling menu visibility")
-        if (navViewModel.backStack.lastOrNull() == MenuNav) {
-            navViewModel.backStack.removeLastOrNull()
-        } else {
+        if (!closeMenu()) {
+            Log.d("PlatformViewModel", "Showing menu")
             navViewModel.backStack.add(MenuNav)
         }
+    }
+
+    fun closeMenu(): Boolean {
+        Log.d("PlatformViewModel", "Closing menu")
+        if (navViewModel.backStack.lastOrNull() == MenuNav) {
+            navViewModel.backStack.removeLastOrNull()
+            return true
+        }
+
+        return false
     }
 }

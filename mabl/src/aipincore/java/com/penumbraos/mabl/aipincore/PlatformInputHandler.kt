@@ -1,7 +1,11 @@
 package com.penumbraos.mabl.aipincore
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.penumbraos.mabl.aipincore.input.ITouchpadGestureDelegate
 import com.penumbraos.mabl.aipincore.input.TouchpadGesture
@@ -89,6 +93,14 @@ open class PlatformInputHandler(
                     Log.w(TAG, "Touchpad gesture: $gesture")
                 }
             })
+
+        ContextCompat.registerReceiver(context, object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == Intent.ACTION_SCREEN_OFF) {
+                    viewModel.closeMenu()
+                }
+            }
+        }, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     private fun checkHandGestureCooldown(): Boolean {
