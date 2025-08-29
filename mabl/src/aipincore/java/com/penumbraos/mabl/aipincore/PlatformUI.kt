@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +39,6 @@ import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
 import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.Message
-import com.penumbraos.mabl.data.MessageRepository
 import com.penumbraos.mabl.ui.UIComponents
 
 @Composable
@@ -101,18 +99,6 @@ fun PlatformUI(uiComponents: UIComponents) {
             }
         }
     }
-}
-
-@Composable
-fun PinMainView(
-    uiComponents: UIComponents,
-    database: AppDatabase,
-    viewModel: PlatformViewModel
-) {
-    val repository = remember { MessageRepository(database.messageDao()) }
-    val messages = repository.getAllMessages().collectAsState(initial = emptyList())
-
-    ConversationDisplay(messages = messages.value)
 }
 
 @Composable

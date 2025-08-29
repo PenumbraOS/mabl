@@ -3,9 +3,9 @@ package com.penumbraos.mabl.data
 import kotlinx.coroutines.flow.Flow
 
 class MessageRepository(private val messageDao: MessageDao) {
-    
-    fun getAllMessages(): Flow<List<Message>> = messageDao.getAllMessages()
-    
+
+    fun getAllMessages(count: Int): Flow<List<Message>> = messageDao.getAllMessages(count)
+
     suspend fun addMessage(content: String, isUser: Boolean) {
         messageDao.insertMessage(
             Message(
@@ -14,7 +14,7 @@ class MessageRepository(private val messageDao: MessageDao) {
             )
         )
     }
-    
+
     suspend fun clearAllMessages() {
         messageDao.clearAll()
     }

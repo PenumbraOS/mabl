@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MessageDao {
-    @Query("SELECT * FROM messages ORDER BY timestamp ASC")
-    fun getAllMessages(): Flow<List<Message>>
-    
+    @Query("SELECT * FROM messages ORDER BY timestamp DESC LIMIT :count")
+    fun getAllMessages(count: Int): Flow<List<Message>>
+
     @Insert
     suspend fun insertMessage(message: Message)
-    
+
     @Query("DELETE FROM messages")
     suspend fun clearAll()
 }

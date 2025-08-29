@@ -12,7 +12,7 @@ import com.penumbraos.mabl.data.MessageRepository
 fun Conversations() {
     val viewModel = viewModel<PlatformViewModel>()
     val repository = remember { MessageRepository(viewModel.database.messageDao()) }
-    val messages = repository.getAllMessages().collectAsState(initial = emptyList())
+    val messages = repository.getAllMessages(count = 10).collectAsState(initial = emptyList())
 
     ConversationDisplay(messages = messages.value)
 }
