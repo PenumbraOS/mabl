@@ -1,6 +1,7 @@
 package com.penumbraos.mabl.conversation
 
 import android.util.Log
+import com.penumbraos.mabl.data.ConversationRepository
 import com.penumbraos.mabl.sdk.ConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.IToolCallback
@@ -8,17 +9,17 @@ import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.services.AllControllers
-import com.penumbraos.mabl.data.ConversationRepository
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 private const val TAG = "ConversationManager"
+
+private const val CONVERSATION_EXPIRATION_TIME = 60 * 3 * 1000
 
 @Serializable
 data class SerializableToolCall(
@@ -29,7 +30,7 @@ data class SerializableToolCall(
 
 class ConversationManager(
     private val allControllers: AllControllers,
-    private val conversationRepository: ConversationRepository? = null
+    private val conversationRepository: ConversationRepository
 ) {
     private val conversationHistory = mutableListOf<ConversationMessage>()
     private val pendingToolCalls = mutableMapOf<String, ToolCall>()
@@ -38,50 +39,20 @@ class ConversationManager(
     private val json = Json { ignoreUnknownKeys = true }
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    fun setConversationId(conversationId: String) {
-        this.currentConversationId = conversationId
-    }
+    private var lastMessageTimestamp: Long = 0
     
-    suspend fun resumeConversation(conversationId: String) {
-        this.currentConversationId = conversationId
-        
-        if (conversationRepository != null) {
-            // Load conversation history from database
-            val messages = conversationRepository.getConversationMessages(conversationId)
-            conversationHistory.clear()
-            
-            // Convert database messages to SDK messages
-            for (dbMessage in messages) {
-                val sdkMessage = ConversationMessage().apply {
-                    type = dbMessage.type
-                    content = dbMessage.content
-                    toolCalls = if (dbMessage.toolCalls != null) {
-                        try {
-                            val serializableToolCalls = json.decodeFromString<Array<SerializableToolCall>>(dbMessage.toolCalls)
-                            serializableToolCalls.map { serializable ->
-                                ToolCall().apply {
-                                    id = serializable.id
-                                    name = serializable.name
-                                    parameters = serializable.parameters
-                                }
-                            }.toTypedArray()
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Failed to parse tool calls: ${e.message}")
-                            emptyArray()
-                        }
-                    } else {
-                        emptyArray()
-                    }
-                    toolCallId = dbMessage.toolCallId
-                }
-                conversationHistory.add(sdkMessage)
-            }
-            
-            Log.d(TAG, "Resumed conversation $conversationId with ${conversationHistory.size} messages")
-        }
-    }
+    suspend fun startOrContinueConversationWithMessage(
+        userMessage: String,
+        callback: ConversationCallback
+    ) {
+        val timestamp = System.currentTimeMillis()
 
-    fun processUserMessage(userMessage: String, callback: ConversationCallback) {
+        if (currentConversationId == null || timestamp - lastMessageTimestamp > CONVERSATION_EXPIRATION_TIME) {
+            startNewConversation()
+        }
+
+        lastMessageTimestamp = timestamp
+
         val userMsg = ConversationMessage().apply {
             type = "user"
             content = userMessage
@@ -89,7 +60,7 @@ class ConversationManager(
             toolCallId = null
         }
         conversationHistory.add(userMsg)
-        
+
         // Persist user message to database
         persistMessage("user", userMessage)
 
@@ -148,7 +119,7 @@ class ConversationManager(
                 toolCallId = null
             }
             conversationHistory.add(assistantMsg)
-            
+
             // Persist assistant message with tool calls to database
             val serializableToolCalls = response.toolCalls.map { toolCall ->
                 SerializableToolCall(
@@ -204,10 +175,10 @@ class ConversationManager(
                 toolCallId = null
             }
             conversationHistory.add(assistantMsg)
-            
+
             // Persist assistant message to database
             persistMessage("assistant", responseText)
-            
+
             callback.onCompleteResponse(responseText)
         }
     }
@@ -218,7 +189,6 @@ class ConversationManager(
     ) {
         // Add tool results to conversation history
         pendingToolResults.forEach { (callId, result) ->
-            val toolCall = pendingToolCalls[callId]
             val toolMsg = ConversationMessage().apply {
                 type = "tool"
                 content = result
@@ -226,7 +196,7 @@ class ConversationManager(
                 toolCallId = callId
             }
             conversationHistory.add(toolMsg)
-            
+
             // Persist tool result to database
             persistMessage("tool", result, null, callId)
         }
@@ -255,10 +225,10 @@ class ConversationManager(
                         toolCallId = null
                     }
                     conversationHistory.add(assistantMsg)
-                    
+
                     // Persist final assistant response to database
                     persistMessage("assistant", response.text ?: "")
-                    
+
                     callback.onCompleteResponse(response.text ?: "")
                 }
 
@@ -270,12 +240,12 @@ class ConversationManager(
 
 
     private fun persistMessage(
-        type: String, 
-        content: String, 
-        toolCalls: String? = null, 
+        type: String,
+        content: String,
+        toolCalls: String? = null,
         toolCallId: String? = null
     ) {
-        if (conversationRepository != null && currentConversationId != null) {
+        if (currentConversationId != null) {
             coroutineScope.launch {
                 try {
                     conversationRepository.addMessage(
@@ -291,6 +261,86 @@ class ConversationManager(
             }
         }
     }
+
+    // Session management methods
+    suspend fun startNewConversation(): ConversationManager {
+        Log.d(TAG, "Starting new conversation")
+
+        val conversation = conversationRepository.createNewConversation()
+        currentConversationId = conversation.id
+        conversationHistory.clear()
+        pendingToolCalls.clear()
+        pendingToolResults.clear()
+        lastMessageTimestamp = System.currentTimeMillis()
+
+        Log.d(TAG, "Created new conversation: ${conversation.id}")
+        return this
+    }
+
+//    suspend fun resumeConversation(conversationId: String): Boolean {
+//        Log.d(TAG, "Resuming conversation: $conversationId")
+//
+//        val conversation = conversationRepository.getConversation(conversationId)
+//        if (conversation == null) {
+//            Log.w(TAG, "Conversation not found: $conversationId")
+//            return false
+//        }
+//
+//        this.currentConversationId = conversationId
+//        conversationHistory.clear()
+//        pendingToolCalls.clear()
+//        pendingToolResults.clear()
+//
+//        // Load conversation history from database
+//        val messages = conversationRepository.getConversationMessages(conversationId)
+//
+//        // Convert database messages to SDK messages
+//        for (dbMessage in messages) {
+//            val sdkMessage = ConversationMessage().apply {
+//                type = dbMessage.type
+//                content = dbMessage.content
+//                toolCalls = if (dbMessage.toolCalls != null) {
+//                    try {
+//                        val serializableToolCalls =
+//                            json.decodeFromString<Array<SerializableToolCall>>(dbMessage.toolCalls)
+//                        serializableToolCalls.map { serializable ->
+//                            ToolCall().apply {
+//                                id = serializable.id
+//                                name = serializable.name
+//                                parameters = serializable.parameters
+//                            }
+//                        }.toTypedArray()
+//                    } catch (e: Exception) {
+//                        Log.w(TAG, "Failed to parse tool calls: ${e.message}")
+//                        emptyArray()
+//                    }
+//                } else {
+//                    emptyArray()
+//                }
+//                toolCallId = dbMessage.toolCallId
+//            }
+//            conversationHistory.add(sdkMessage)
+//        }
+//
+//        conversationRepository.updateLastActivity(conversationId)
+//        lastMessageTimestamp = System.currentTimeMillis()
+//
+//        Log.d(TAG, "Resumed conversation $conversationId with ${conversationHistory.size} messages")
+//        return true
+//    }
+//
+//    suspend fun resumeLastConversation(): Boolean {
+//        Log.d(TAG, "Resuming last conversation")
+//
+//        val lastConversation = conversationRepository.getLastActiveConversation()
+//        return if (lastConversation != null) {
+//            resumeConversation(lastConversation.id)
+//        } else {
+//            Log.d(TAG, "No previous conversation found, starting new one")
+//            startNewConversation()
+//            true
+//        }
+//    }
 
     interface ConversationCallback {
         fun onPartialResponse(newToken: String)

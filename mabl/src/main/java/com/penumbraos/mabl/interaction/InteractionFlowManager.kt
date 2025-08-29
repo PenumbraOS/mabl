@@ -5,12 +5,17 @@ import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private const val TAG = "InteractionFlowManager"
 
 class InteractionFlowManager(
     private val allControllers: AllControllers
 ) : IInteractionFlowManager {
+
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private var currentState = InteractionFlowState.IDLE
     private var conversationManager: ConversationManager? = null
@@ -68,32 +73,34 @@ class InteractionFlowManager(
 
         setState(InteractionFlowState.PROCESSING)
 
-        conversationManager!!.processUserMessage(
-            userInput,
-            object : ConversationManager.ConversationCallback {
-                override fun onPartialResponse(newToken: String) {
-                    Log.d(TAG, "LLM partial response: $newToken")
-                    contentCallback?.onPartialResponse(newToken)
+        coroutineScope.launch {
+            conversationManager!!.startOrContinueConversationWithMessage(
+                userInput,
+                object : ConversationManager.ConversationCallback {
+                    override fun onPartialResponse(newToken: String) {
+                        Log.d(TAG, "LLM partial response: $newToken")
+                        contentCallback?.onPartialResponse(newToken)
 
-                    if (currentState == InteractionFlowState.PROCESSING) {
-                        setState(InteractionFlowState.SPEAKING)
+                        if (currentState == InteractionFlowState.PROCESSING) {
+                            setState(InteractionFlowState.SPEAKING)
+                        }
+                        allControllers.tts.service?.speakIncremental(newToken)
                     }
-                    allControllers.tts.service?.speakIncremental(newToken)
-                }
 
-                override fun onCompleteResponse(finalResponse: String) {
-                    Log.d(TAG, "LLM complete response: $finalResponse")
-                    contentCallback?.onFinalResponse(finalResponse)
-                    setState(InteractionFlowState.IDLE)
-                }
+                    override fun onCompleteResponse(finalResponse: String) {
+                        Log.d(TAG, "LLM complete response: $finalResponse")
+                        contentCallback?.onFinalResponse(finalResponse)
+                        setState(InteractionFlowState.IDLE)
+                    }
 
-                override fun onError(error: String) {
-                    Log.e(TAG, "Conversation error: $error")
-                    setState(InteractionFlowState.IDLE)
-                    stateCallback?.onError(Error.LlmError("Conversation error: $error"))
+                    override fun onError(error: String) {
+                        Log.e(TAG, "Conversation error: $error")
+                        setState(InteractionFlowState.IDLE)
+                        stateCallback?.onError(Error.LlmError("Conversation error: $error"))
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 
     override fun cancelCurrentFlow() {

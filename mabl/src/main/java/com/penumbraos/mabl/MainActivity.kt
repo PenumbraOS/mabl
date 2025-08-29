@@ -126,8 +126,8 @@ class MainActivity : ComponentActivity() {
             controllers.interactionFlowManager.setContentCallback(interactionContentCallback)
 
             // TODO: Allow renewing conversation
-            val conversationManager = controllers.conversationSessionManager.startNewConversation()
-            controllers.interactionFlowManager.setConversationManager(conversationManager)
+            controllers.conversationManager.startNewConversation()
+            controllers.interactionFlowManager.setConversationManager(controllers.conversationManager)
 
             uiComponents.platformInputHandler.setup(
                 context = this@MainActivity,
