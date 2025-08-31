@@ -71,6 +71,8 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
+          # We don't care to time out
+          timeout_seconds: 3600
           retry_wait_seconds: 180
           command: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
