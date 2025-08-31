@@ -7,7 +7,6 @@ import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.types.HttpEndpointHandler
 import com.penumbraos.sdk.api.types.HttpRequest
 import com.penumbraos.sdk.api.types.HttpResponse
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -49,7 +48,7 @@ class HttpServer(
 
                         if (conversationId == null) {
                             return HttpResponse(
-                                statusCode = HttpStatusCode.BadRequest.value,
+                                statusCode = 400,
                                 body = Json.encodeToString(mapOf("error" to "Missing conversationId parameter"))
                             )
                         }
@@ -59,7 +58,7 @@ class HttpServer(
 
                         if (conversation == null) {
                             return HttpResponse(
-                                statusCode = HttpStatusCode.NotFound.value,
+                                statusCode = 404,
                                 body = Json.encodeToString(mapOf("error" to "Conversation not found"))
                             )
                         }
