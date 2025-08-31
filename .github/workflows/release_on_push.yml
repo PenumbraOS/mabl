@@ -68,7 +68,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Release APKs
-        run: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 180
+          command: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
       - name: Rename APK files
         run: |
