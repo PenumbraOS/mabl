@@ -3,11 +3,12 @@ package com.penumbraos.mabl.services
 import android.content.Context
 import android.util.Log
 import com.penumbraos.mabl.BuildConfig
+import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.ConversationRepository
-import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.interaction.InteractionFlowManager
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 
 private const val TAG = "AllControllers"
 
@@ -29,19 +30,19 @@ class AllControllers {
         }
     }
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, coroutineScope: CoroutineScope) {
         llm = LlmController { checkAllConnected() }
         stt = SttController { checkAllConnected() }
         tts = TtsController { checkAllConnected() }
         toolOrchestrator = ToolOrchestrator(context, this)
         toolOrchestrator.initialize()
-        
+
         val database = AppDatabase.getDatabase(context)
         conversationRepository = ConversationRepository(
             database.conversationDao(),
             database.conversationMessageDao()
         )
-        
+
         conversationManager = ConversationManager(this, conversationRepository)
         interactionFlowManager = InteractionFlowManager(this)
     }
@@ -56,21 +57,24 @@ class AllControllers {
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to connect LLM service in simulator: $e")
             }
-            
+
             try {
                 tts.connect(context, "com.penumbraos.plugins.demo")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to connect TTS service in simulator: $e")
             }
-            
+
             // STT is handled by simulator service - bind to internal simulator service
             try {
-                stt.connect(context, context.packageName) // Connect to our own package where SimulatorSttService is registered
+                stt.connect(
+                    context,
+                    context.packageName
+                )
                 Log.d(TAG, "Connected to simulator STT service")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to connect to simulator STT service: $e")
             }
-            
+
             try {
                 toolOrchestrator.connectAll()
             } catch (e: Exception) {

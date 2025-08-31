@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        controllers.initialize(this)
+        controllers.initialize(this, lifecycleScope)
 
         initializeUIComponents()
 

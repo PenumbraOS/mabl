@@ -7,7 +7,8 @@ class ConversationRepository(
     private val conversationMessageDao: ConversationMessageDao
 ) {
 
-    fun getAllConversations(): Flow<List<Conversation>> = conversationDao.getAllConversations()
+    fun getAllConversations(limit: Int = 50): List<Conversation> =
+        conversationDao.getAllConversations(limit)
 
     suspend fun getConversation(id: String): Conversation? = conversationDao.getConversation(id)
 

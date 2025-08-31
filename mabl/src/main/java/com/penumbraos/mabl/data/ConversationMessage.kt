@@ -3,7 +3,9 @@ package com.penumbraos.mabl.data
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "conversation_messages",
     foreignKeys = [ForeignKey(
@@ -19,7 +21,7 @@ data class ConversationMessage(
     /**
      * "user", "assistant", "tool"
      */
-    val type: String, 
+    val type: String,
     val content: String,
     /**
      * JSON serialized tool calls
