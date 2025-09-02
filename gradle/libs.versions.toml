@@ -53,6 +53,10 @@ androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", vers
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camera" }
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
+penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = "penumbraos-sdk" }
+#penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
+moonlight-ui = { group = "com.github.agg23", name = "moonlight", version.ref = "moonlight-ui" }
+#moonlight-ui = { group = "com.open.pin", name = "ui", version.ref = "moonlight-ui-local" }
 openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
 ktor-content-negociation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor-client" }
