@@ -65,7 +65,7 @@ class SimulatorInputHandler(
     override fun onSimulatorStopListening() {
         Log.d(TAG, "Simulator stop listening")
         if (interactionFlowManager.isFlowActive()) {
-            interactionFlowManager.cancelCurrentFlow()
+            interactionFlowManager.finishListening()
         }
     }
 }
