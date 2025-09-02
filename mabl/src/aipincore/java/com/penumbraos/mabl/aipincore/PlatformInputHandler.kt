@@ -67,17 +67,17 @@ open class PlatformInputHandler(
                     // TODO: Build proper API for Input Handler to perform standardized triggers
                     if (gesture.kind != TouchpadGestureKind.HOLD_END) {
                         // Any gesture that isn't a release should halt talking
-                        interactionFlowManager.cancelCurrentFlow()
+                        interactionFlowManager.finishListening()
                     }
 
                     when (gesture.kind) {
                         TouchpadGestureKind.HOLD_START -> {
-                            interactionFlowManager.startListening()
+                            interactionFlowManager.startListening(requestImage = gesture.fingerCount == 2)
                         }
 
                         TouchpadGestureKind.HOLD_END -> {
                             if (interactionFlowManager.isFlowActive()) {
-                                interactionFlowManager.cancelCurrentFlow()
+                                interactionFlowManager.finishListening()
                             }
                         }
 

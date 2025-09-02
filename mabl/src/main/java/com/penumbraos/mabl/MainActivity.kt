@@ -68,9 +68,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        override fun onFlowCancelled() {
+        override fun onUserFinished() {
             runOnUiThread {
-                Log.i("MainActivity", "Flow cancelled")
+                Log.i("MainActivity", "User finished")
                 uiComponents.conversationRenderer.showListening(false)
             }
         }

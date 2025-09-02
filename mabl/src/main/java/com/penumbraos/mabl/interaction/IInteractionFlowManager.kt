@@ -4,9 +4,9 @@ import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.types.Error
 
 interface IInteractionFlowManager {
-    fun startListening()
+    fun startListening(requestImage: Boolean = false)
     fun startConversationFromInput(userInput: String)
-    fun cancelCurrentFlow()
+    fun finishListening()
     fun isFlowActive(): Boolean
     fun getCurrentFlowState(): InteractionFlowState
 
@@ -26,11 +26,11 @@ enum class InteractionFlowState {
 interface InteractionStateCallback {
     fun onListeningStarted()
     fun onListeningStopped()
+    fun onUserFinished()
     fun onProcessingStarted()
     fun onProcessingStopped()
     fun onSpeakingStarted()
     fun onSpeakingStopped()
-    fun onFlowCancelled()
     fun onError(error: Error)
 }
 

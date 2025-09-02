@@ -1,8 +1,12 @@
+@file:OptIn(ExperimentalEncodingApi::class)
+
 package com.penumbraos.plugins.openai
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.IBinder
+import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import com.aallam.openai.api.chat.*
 import com.aallam.openai.api.core.Parameters
@@ -30,7 +34,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.ByteArrayOutputStream
+import java.io.FileInputStream
 import kotlin.coroutines.resume
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 private const val TAG = "OpenAiLlmService"
 
@@ -143,10 +151,41 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                 try {
                     val conversationMessages = messages.map { message ->
                         when (message.type) {
-                            "user" -> ChatMessage(
-                                role = ChatRole.User,
-                                content = message.content
-                            )
+                            "user" -> {
+                                if (message.imageFile != null) {
+                                    val fileDescriptor = message.imageFile.fileDescriptor
+                                    // Rewind file descriptor so we can reuse them
+                                    // TODO: This somehow needs to live in MABL core
+                                    Os.lseek(
+                                        fileDescriptor,
+                                        0,
+                                        OsConstants.SEEK_SET
+                                    )
+                                    val imageBytes =
+                                        FileInputStream(fileDescriptor)
+                                    val byteArrayOutputStream = ByteArrayOutputStream()
+                                    val buffer = ByteArray(4096)
+                                    var bytesRead: Int
+                                    while (imageBytes.read(buffer).also { bytesRead = it } != -1) {
+                                        byteArrayOutputStream.write(buffer, 0, bytesRead)
+                                    }
+                                    val imageUrl =
+                                        Base64.UrlSafe.encode(byteArrayOutputStream.toByteArray())
+
+                                    ChatMessage(
+                                        role = ChatRole.User,
+                                        content = listOf(
+                                            TextPart(message.content),
+                                            ImagePart(url = "data:image/jpeg;base64,$imageUrl")
+                                        )
+                                    )
+                                } else {
+                                    ChatMessage(
+                                        role = ChatRole.User,
+                                        content = message.content
+                                    )
+                                }
+                            }
 
                             "assistant" -> ChatMessage(
                                 role = ChatRole.Assistant,

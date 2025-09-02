@@ -81,6 +81,10 @@ dependencies {
     "aipinImplementation"(libs.moonlight.ui)
     "aipinSimulatorImplementation"(libs.moonlight.ui)
 
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.camera2)
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.onnx.runtime.android)
 

@@ -30,7 +30,10 @@ class AllControllers {
         }
     }
 
-    fun initialize(context: Context, coroutineScope: CoroutineScope) {
+    fun initialize(
+        context: Context,
+        coroutineScope: CoroutineScope
+    ) {
         llm = LlmController { checkAllConnected() }
         stt = SttController { checkAllConnected() }
         tts = TtsController { checkAllConnected() }
@@ -43,8 +46,8 @@ class AllControllers {
             database.conversationMessageDao()
         )
 
-        conversationManager = ConversationManager(this, conversationRepository)
-        interactionFlowManager = InteractionFlowManager(this)
+        conversationManager = ConversationManager(this, context, conversationRepository)
+        interactionFlowManager = InteractionFlowManager(this, context)
     }
 
     suspend fun connectAll(context: Context) {

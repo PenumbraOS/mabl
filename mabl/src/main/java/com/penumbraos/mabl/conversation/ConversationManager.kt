@@ -1,5 +1,7 @@
 package com.penumbraos.mabl.conversation
 
+import android.content.Context
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.penumbraos.mabl.data.ConversationRepository
 import com.penumbraos.mabl.sdk.ConversationMessage
@@ -16,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 
 private const val TAG = "ConversationManager"
 
@@ -30,19 +33,22 @@ data class SerializableToolCall(
 
 class ConversationManager(
     private val allControllers: AllControllers,
+    private val context: Context,
     private val conversationRepository: ConversationRepository
 ) {
+    var currentConversationId: String? = null
+
     private val conversationHistory = mutableListOf<ConversationMessage>()
     private val pendingToolCalls = mutableMapOf<String, ToolCall>()
     private val pendingToolResults = mutableMapOf<String, String>()
-    private var currentConversationId: String? = null
     private val json = Json { ignoreUnknownKeys = true }
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private var lastMessageTimestamp: Long = 0
-    
+
     suspend fun startOrContinueConversationWithMessage(
         userMessage: String,
+        imageMessage: File? = null,
         callback: ConversationCallback
     ) {
         val timestamp = System.currentTimeMillis()
@@ -56,6 +62,10 @@ class ConversationManager(
         val userMsg = ConversationMessage().apply {
             type = "user"
             content = userMessage
+            imageFile = if (imageMessage != null) ParcelFileDescriptor.open(
+                imageMessage,
+                ParcelFileDescriptor.MODE_READ_ONLY
+            ) else null
             toolCalls = emptyArray()
             toolCallId = null
         }
@@ -272,6 +282,10 @@ class ConversationManager(
         pendingToolCalls.clear()
         pendingToolResults.clear()
         lastMessageTimestamp = System.currentTimeMillis()
+
+        // Clear all conversation temp data
+        // TODO: Maybe move to subdirectory
+        context.cacheDir.deleteRecursively()
 
         Log.d(TAG, "Created new conversation: ${conversation.id}")
         return this
