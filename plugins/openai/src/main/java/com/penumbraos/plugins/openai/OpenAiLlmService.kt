@@ -170,7 +170,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                                         byteArrayOutputStream.write(buffer, 0, bytesRead)
                                     }
                                     val imageUrl =
-                                        Base64.UrlSafe.encode(byteArrayOutputStream.toByteArray())
+                                        Base64.Default.encode(byteArrayOutputStream.toByteArray())
 
                                     ChatMessage(
                                         role = ChatRole.User,
