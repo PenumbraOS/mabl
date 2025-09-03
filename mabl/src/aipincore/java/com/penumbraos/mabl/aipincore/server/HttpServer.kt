@@ -22,6 +22,8 @@ class HttpServer(
 ) {
     init {
         coroutineScope.launch {
+            client.waitForBridge()
+
             client.settings.registerHttpEndpoint(
                 HTTP_ID,
                 "/api/conversation",
