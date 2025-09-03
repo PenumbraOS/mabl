@@ -7,6 +7,29 @@ This is primary user entrypoint app for [PenumbraOS](https://github.com/Penumbra
 
 MABL is a central orchestrator app, running as a normal unprivileged `untrusted` app, which exposes a plugin archecture built around the Android SDK ecosystem to enable users to install different implementations of LLMs (local, remote, realtime audio), TTS and STT, separate apps (like a timer or notes app), etc.
 
+## Features
+
+- Hold a single finger to talk to LLM
+- Hold two fingers to talk to LLM with a picture
+- Conversation persistence (ask "what did you just say" or similar)
+- Rough laser ink projected display
+  - Date and time home screen
+  - Conversation display
+  - Navigation and menuing
+- Dynamic tool calling
+  - Cosign similiarity between tool description embedding and user query selects the top `n` (currently 6) tools
+  - Only these tools, plus any "persistent" ones, are passed to the LLM
+  - Optimized for faster processing and local LLMs
+- Plugable tool providers. Existing tool providers are:
+  - OpenAI compatible LLM (provided API keys)
+  - Humane speech to text
+  - Generic Android text to speech
+  - Google search (provided API keys)
+  - Generic Android system operations (volume, more to come)
+  - Ai Pin specific operations (timers, more to come)
+
+---
+
 ## Architecture
 
 ### Overview
@@ -41,7 +64,7 @@ Plugin discovery uses the normal SDK provisions of `PackageManager`. Plugins reg
 
 #### Logic
 
-Logic runs in the plugin's own process, like a normal Android app. Each plugin binds its own variant of the provider services it implements. `untrusted_app` should be able to register services usable by other `untrusted_app` based on the SELinux rules (**NOTE:** I have not tested this). Each plugin maintains its own access to the [PenumbraOS SDK](https://github.com/penumbraOS/sdk), and thus can access the network and priviledged operations like changing settings.
+Logic runs in the plugin's own process, like a normal Android app. Each plugin binds its own variant of the provider services it implements. `untrusted_app` should be able to register services usable by other `untrusted_app` based on the SELinux rules. Each plugin maintains its own access to the [PenumbraOS SDK](https://github.com/penumbraOS/sdk), and thus can access the network and priviledged operations like changing settings.
 
 #### Rendering
 
