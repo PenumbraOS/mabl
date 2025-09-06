@@ -13,7 +13,7 @@ import com.aallam.openai.api.core.Parameters
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIHost
-import com.penumbraos.mabl.sdk.ConversationMessage
+import com.penumbraos.mabl.sdk.BinderConversationMessage
 import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmConfigCallback
@@ -132,7 +132,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         }
 
         override fun generateResponse(
-            messages: Array<ConversationMessage>,
+            messages: Array<BinderConversationMessage>,
             tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {

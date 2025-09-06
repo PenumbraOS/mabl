@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import com.penumbraos.mabl.conversation.ConversationManager
@@ -15,12 +14,6 @@ import com.penumbraos.mabl.types.Error
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 
 private const val TAG = "InteractionFlowManager"
 
@@ -121,7 +114,7 @@ class InteractionFlowManager
         setState(InteractionFlowState.PROCESSING)
 
         coroutineScope.launch {
-            var imageInput: File? = null
+            var imageInput: ByteArray? = null
 
             if (currentModality == InteractionFlowModality.Vision) {
                 Log.d(TAG, "Starting conversation with grounding image")
@@ -219,48 +212,12 @@ class InteractionFlowManager
         }
     }
 
-    private suspend fun takeGroundingImage(): File? {
+    private suspend fun takeGroundingImage(): ByteArray? {
         if (isCameraServiceBound && cameraService != null) {
             val imageData = cameraService!!.takePicture()
             if (imageData != null) {
                 Log.d(TAG, "Grounding image captured, size: ${imageData.size}")
-
-                val imageId = UUID.randomUUID().toString()
-
-                val imageFile = File(
-                    context.cacheDir,
-                    "${conversationManager!!.currentConversationId}/$imageId.jpg"
-                )
-                imageFile.parentFile?.mkdirs()
-
-                FileOutputStream(imageFile).use { fos ->
-                    fos.write(imageData)
-                }
-
-                // TODO: For debugging only
-                // Save image to Pictures directory
-                try {
-                    val picturesDir =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                    val mablDir = File(picturesDir, "MABL")
-                    mablDir.mkdirs()
-
-                    val timestamp =
-                        SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(
-                            Date()
-                        )
-                    val imageFile = File(mablDir, "grounding_image_$timestamp.jpg")
-
-                    FileOutputStream(imageFile).use { fos ->
-                        fos.write(imageData)
-                    }
-
-                    Log.d(TAG, "Grounding image saved to: ${imageFile.absolutePath}")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to save grounding image", e)
-                }
-
-                return imageFile
+                return imageData
             }
         } else {
             Log.e(TAG, "Camera service not available")

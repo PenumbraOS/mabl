@@ -1,6 +1,7 @@
 package com.penumbraos.mabl.aipincore.server
 
-import com.penumbraos.mabl.aipincore.server.types.ConversationWithMessages
+import com.penumbraos.mabl.aipincore.server.types.AugmentedConversation
+import com.penumbraos.mabl.aipincore.server.types.MessageWithImages
 import com.penumbraos.mabl.data.types.Conversation
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.sdk.PenumbraClient
@@ -35,7 +36,7 @@ class HttpServer(
                         return HttpResponse(
                             body = Json.encodeToString<List<Conversation>>(
                                 conversations
-                            )
+                            ).toByteArray()
                         )
                     }
                 })
@@ -52,6 +53,7 @@ class HttpServer(
                             return HttpResponse(
                                 statusCode = 400,
                                 body = Json.encodeToString(mapOf("error" to "Missing conversationId parameter"))
+                                    .toByteArray()
                             )
                         }
 
@@ -62,6 +64,7 @@ class HttpServer(
                             return HttpResponse(
                                 statusCode = 404,
                                 body = Json.encodeToString(mapOf("error" to "Conversation not found"))
+                                    .toByteArray()
                             )
                         }
 
@@ -70,17 +73,84 @@ class HttpServer(
                                 conversationId
                             )
 
+                        val messagesWithImages = messages.map { message ->
+                            val images =
+                                allControllers.conversationImageRepository.getImagesForMessage(
+                                    message.id
+                                )
+                            MessageWithImages(
+                                id = message.id,
+                                conversationId = message.conversationId,
+                                type = message.type,
+                                content = message.content,
+                                toolCalls = message.toolCalls,
+                                toolCallId = message.toolCallId,
+                                timestamp = message.timestamp,
+                                images = images
+                            )
+                        }
+
                         return HttpResponse(
                             body = Json.encodeToString(
-                                ConversationWithMessages(
+                                AugmentedConversation(
                                     id = conversation.id,
                                     title = conversation.title,
                                     createdAt = conversation.createdAt,
                                     lastActivity = conversation.lastActivity,
                                     isActive = conversation.isActive,
-                                    messages = messages
+                                    messages = messagesWithImages
                                 )
+                            ).toByteArray()
+                        )
+                    }
+                })
+
+            client.settings.registerHttpEndpoint(
+                HTTP_ID,
+                "/api/image/{fileName}",
+                "GET",
+                object : HttpEndpointHandler {
+                    override suspend fun handleRequest(request: HttpRequest): HttpResponse {
+                        val fileName = request.pathParams["fileName"]
+
+                        if (fileName == null) {
+                            return HttpResponse(
+                                statusCode = 400,
+                                body = Json.encodeToString(mapOf("error" to "Missing fileName parameter"))
+                                    .toByteArray()
                             )
+                        }
+
+                        val image =
+                            allControllers.conversationImageRepository.getImageByFileName(fileName)
+
+                        if (image == null) {
+                            return HttpResponse(
+                                statusCode = 404,
+                                body = Json.encodeToString(mapOf("error" to "Image not found"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val imageFile =
+                            allControllers.conversationImageRepository.getImageFile(fileName)
+
+                        if (!imageFile.exists()) {
+                            return HttpResponse(
+                                statusCode = 404,
+                                body = Json.encodeToString(mapOf("error" to "Image file not found on disk"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        return HttpResponse(
+                            statusCode = 200,
+                            headers = mapOf(
+                                "Content-Type" to image.mimeType,
+                                "Content-Length" to image.fileSizeBytes.toString(),
+                                "Cache-Control" to "public, max-age=3600" // Cache for 1 hour
+                            ),
+                            body = imageFile.readBytes()
                         )
                     }
                 })

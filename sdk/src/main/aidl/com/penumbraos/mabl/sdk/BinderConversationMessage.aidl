@@ -2,7 +2,7 @@ package com.penumbraos.mabl.sdk;
 
 import com.penumbraos.mabl.sdk.ToolCall;
 
-parcelable ConversationMessage {
+parcelable BinderConversationMessage {
     // "user", "assistant", "tool"
     String type;
     String content;

@@ -3,8 +3,9 @@ package com.penumbraos.mabl.conversation
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import com.penumbraos.mabl.data.repository.ConversationImageRepository
 import com.penumbraos.mabl.data.repository.ConversationRepository
-import com.penumbraos.mabl.sdk.ConversationMessage
+import com.penumbraos.mabl.sdk.BinderConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.LlmResponse
@@ -34,11 +35,12 @@ data class SerializableToolCall(
 class ConversationManager(
     private val allControllers: AllControllers,
     private val context: Context,
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val conversationImageRepository: ConversationImageRepository
 ) {
     var currentConversationId: String? = null
 
-    private val conversationHistory = mutableListOf<ConversationMessage>()
+    private val conversationHistory = mutableListOf<BinderConversationMessage>()
     private val pendingToolCalls = mutableMapOf<String, ToolCall>()
     private val pendingToolResults = mutableMapOf<String, String>()
     private val json = Json { ignoreUnknownKeys = true }
@@ -48,7 +50,7 @@ class ConversationManager(
 
     suspend fun startOrContinueConversationWithMessage(
         userMessage: String,
-        imageMessage: File? = null,
+        imageMessage: ByteArray? = null,
         callback: ConversationCallback
     ) {
         val timestamp = System.currentTimeMillis()
@@ -59,20 +61,20 @@ class ConversationManager(
 
         lastMessageTimestamp = timestamp
 
-        val userMsg = ConversationMessage().apply {
+        // Persist to DB and write image data to file so it can be sent over Binder
+        val dbImageFile = persistMessage("user", userMessage, imageMessage)
+
+        val message = BinderConversationMessage().apply {
             type = "user"
             content = userMessage
-            imageFile = if (imageMessage != null) ParcelFileDescriptor.open(
-                imageMessage,
+            imageFile = if (dbImageFile != null) ParcelFileDescriptor.open(
+                dbImageFile,
                 ParcelFileDescriptor.MODE_READ_ONLY
             ) else null
             toolCalls = emptyArray()
             toolCallId = null
         }
-        conversationHistory.add(userMsg)
-
-        // Persist user message to database
-        persistMessage("user", userMessage)
+        conversationHistory.add(message)
 
         // Filter tools based on user query before sending to LLM
         val filteredTools = runBlocking {
@@ -122,13 +124,13 @@ class ConversationManager(
             Log.d(TAG, "LLM requested ${response.toolCalls.size} tool calls")
 
             // Add assistant message with tool calls to history
-            val assistantMsg = ConversationMessage().apply {
+            val message = BinderConversationMessage().apply {
                 type = "assistant"
                 content = responseText
                 toolCalls = response.toolCalls
                 toolCallId = null
             }
-            conversationHistory.add(assistantMsg)
+            conversationHistory.add(message)
 
             // Persist assistant message with tool calls to database
             val serializableToolCalls = response.toolCalls.map { toolCall ->
@@ -139,7 +141,7 @@ class ConversationManager(
                 )
             }.toTypedArray()
             val toolCallsJson = json.encodeToString(serializableToolCalls)
-            persistMessage("assistant", responseText, toolCallsJson)
+            persistMessageSync("assistant", responseText, toolCallsJson)
 
             // Execute tool calls
             val toolCallsToExecute = response.toolCalls.size
@@ -178,16 +180,16 @@ class ConversationManager(
             }
         } else {
             // No tool calls, this is the final response
-            val assistantMsg = ConversationMessage().apply {
+            val message = BinderConversationMessage().apply {
                 type = "assistant"
                 content = responseText
                 toolCalls = emptyArray()
                 toolCallId = null
             }
-            conversationHistory.add(assistantMsg)
+            conversationHistory.add(message)
 
             // Persist assistant message to database
-            persistMessage("assistant", responseText)
+            persistMessageSync("assistant", responseText)
 
             callback.onCompleteResponse(responseText)
         }
@@ -199,16 +201,16 @@ class ConversationManager(
     ) {
         // Add tool results to conversation history
         pendingToolResults.forEach { (callId, result) ->
-            val toolMsg = ConversationMessage().apply {
+            val message = BinderConversationMessage().apply {
                 type = "tool"
                 content = result
                 toolCalls = emptyArray()
                 toolCallId = callId
             }
-            conversationHistory.add(toolMsg)
+            conversationHistory.add(message)
 
             // Persist tool result to database
-            persistMessage("tool", result, null, callId)
+            persistMessageSync("tool", result, null, callId)
         }
 
         // Clear pending calls
@@ -228,16 +230,16 @@ class ConversationManager(
 
                 override fun onCompleteResponse(response: LlmResponse) {
                     // This should be the final response after tool execution
-                    val assistantMsg = ConversationMessage().apply {
+                    val message = BinderConversationMessage().apply {
                         type = "assistant"
                         content = response.text ?: ""
                         toolCalls = emptyArray()
                         toolCallId = null
                     }
-                    conversationHistory.add(assistantMsg)
+                    conversationHistory.add(message)
 
                     // Persist final assistant response to database
-                    persistMessage("assistant", response.text ?: "")
+                    persistMessageSync("assistant", response.text ?: "")
 
                     callback.onCompleteResponse(response.text ?: "")
                 }
@@ -248,28 +250,49 @@ class ConversationManager(
             })
     }
 
-
-    private fun persistMessage(
+    private fun persistMessageSync(
         type: String,
         content: String,
         toolCalls: String? = null,
         toolCallId: String? = null
     ) {
+        coroutineScope.launch {
+            persistMessage(type, content, null, toolCalls, toolCallId)
+        }
+    }
+
+    private suspend fun persistMessage(
+        type: String,
+        content: String,
+        imageData: ByteArray? = null,
+        toolCalls: String? = null,
+        toolCallId: String? = null
+    ): File? {
         if (currentConversationId != null) {
-            coroutineScope.launch {
-                try {
-                    conversationRepository.addMessage(
-                        conversationId = currentConversationId!!,
-                        type = type,
-                        content = content,
-                        toolCalls = toolCalls,
-                        toolCallId = toolCallId
+            try {
+                val dbMessage = conversationRepository.addMessage(
+                    conversationId = currentConversationId!!,
+                    type = type,
+                    content = content,
+                    // TODO: These don't seem to be populated correctly
+                    toolCalls = toolCalls,
+                    toolCallId = toolCallId
+                )
+
+                if (imageData != null) {
+                    val image = conversationImageRepository.saveImage(
+                        dbMessage.id,
+                        imageData,
+                        "image/png"
                     )
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to persist message: ${e.message}")
+                    return image?.second
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to persist message: ${e.message}")
             }
         }
+
+        return null
     }
 
     // Session management methods

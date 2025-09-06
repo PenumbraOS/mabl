@@ -5,7 +5,8 @@ import android.util.Log
 import com.penumbraos.mabl.BuildConfig
 import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.data.AppDatabase
-import com.penumbraos.mabl.data.ConversationRepository
+import com.penumbraos.mabl.data.repository.ConversationImageRepository
+import com.penumbraos.mabl.data.repository.ConversationRepository
 import com.penumbraos.mabl.interaction.InteractionFlowManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,7 @@ class AllControllers {
     lateinit var interactionFlowManager: InteractionFlowManager
     lateinit var conversationManager: ConversationManager
     lateinit var conversationRepository: ConversationRepository
+    lateinit var conversationImageRepository: ConversationImageRepository
 
     val allLoaded = CompletableDeferred<Unit>()
 
@@ -45,8 +47,11 @@ class AllControllers {
             database.conversationDao(),
             database.conversationMessageDao()
         )
+        conversationImageRepository =
+            ConversationImageRepository(context, database.conversationImageDao())
 
-        conversationManager = ConversationManager(this, context, conversationRepository)
+        conversationManager =
+            ConversationManager(this, context, conversationRepository, conversationImageRepository)
         interactionFlowManager = InteractionFlowManager(this, context)
     }
 
