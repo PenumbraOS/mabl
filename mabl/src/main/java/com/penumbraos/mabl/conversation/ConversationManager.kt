@@ -3,7 +3,7 @@ package com.penumbraos.mabl.conversation
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import com.penumbraos.mabl.data.ConversationRepository
+import com.penumbraos.mabl.data.repository.ConversationRepository
 import com.penumbraos.mabl.sdk.ConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.IToolCallback

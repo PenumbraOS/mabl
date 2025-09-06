@@ -5,7 +5,7 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
 import com.penumbraos.mabl.data.AppDatabase
-import com.penumbraos.mabl.data.MessageRepository
+import com.penumbraos.mabl.data.repository.MessageRepository
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer

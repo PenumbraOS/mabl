@@ -6,7 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.penumbraos.mabl.aipincore.ConversationDisplay
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
-import com.penumbraos.mabl.data.MessageRepository
+import com.penumbraos.mabl.data.repository.MessageRepository
 
 @Composable
 fun Conversations() {

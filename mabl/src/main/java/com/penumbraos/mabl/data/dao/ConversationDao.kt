@@ -1,9 +1,10 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import com.penumbraos.mabl.data.types.Conversation
 
 @Dao
 interface ConversationDao {

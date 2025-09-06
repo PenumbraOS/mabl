@@ -1,6 +1,6 @@
 package com.penumbraos.mabl.aipincore.server.types
 
-import com.penumbraos.mabl.data.ConversationMessage
+import com.penumbraos.mabl.data.types.ConversationMessage
 import kotlinx.serialization.Serializable
 
 @Serializable

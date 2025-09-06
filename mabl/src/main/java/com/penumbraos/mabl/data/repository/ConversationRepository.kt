@@ -1,10 +1,15 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.repository
 
+import com.penumbraos.mabl.data.dao.ConversationDao
+import com.penumbraos.mabl.data.dao.ConversationMessageDao
+import com.penumbraos.mabl.data.types.Conversation
+import com.penumbraos.mabl.data.types.ConversationMessage
 import kotlinx.coroutines.flow.Flow
 
 class ConversationRepository(
     private val conversationDao: ConversationDao,
-    private val conversationMessageDao: ConversationMessageDao
+    private val conversationMessageDao: ConversationMessageDao,
+    private val conversationImageRepository: ConversationImageRepository? = null
 ) {
 
     fun getAllConversations(limit: Int = 50): List<Conversation> =
@@ -30,6 +35,7 @@ class ConversationRepository(
     }
 
     suspend fun deleteConversation(conversationId: String) {
+        conversationImageRepository?.deleteImagesForConversation(conversationId)
         conversationDao.deleteConversation(conversationId)
     }
 

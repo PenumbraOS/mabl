@@ -5,7 +5,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import android.content.Context
+import com.penumbraos.mabl.data.dao.ConversationDao
+import com.penumbraos.mabl.data.dao.ConversationMessageDao
+import com.penumbraos.mabl.data.dao.MessageDao
+import com.penumbraos.mabl.data.types.Conversation
+import com.penumbraos.mabl.data.types.ConversationMessage
+import com.penumbraos.mabl.data.types.Message
 
 @Database(
     entities = [Message::class, Conversation::class, ConversationMessage::class],

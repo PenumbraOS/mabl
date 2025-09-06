@@ -1,5 +1,7 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.repository
 
+import com.penumbraos.mabl.data.dao.MessageDao
+import com.penumbraos.mabl.data.types.Message
 import kotlinx.coroutines.flow.Flow
 
 class MessageRepository(private val messageDao: MessageDao) {

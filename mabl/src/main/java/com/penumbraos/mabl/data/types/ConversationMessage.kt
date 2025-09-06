@@ -1,4 +1,4 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.types
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
         entity = Conversation::class,
         parentColumns = ["id"],
         childColumns = ["conversationId"],
-        onDelete = ForeignKey.CASCADE
+        onDelete = ForeignKey.Companion.CASCADE
     )]
 )
 data class ConversationMessage(

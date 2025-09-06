@@ -1,4 +1,4 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.types
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

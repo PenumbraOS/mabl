@@ -38,7 +38,7 @@ import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
 import com.penumbraos.mabl.data.AppDatabase
-import com.penumbraos.mabl.data.Message
+import com.penumbraos.mabl.data.types.Message
 import com.penumbraos.mabl.ui.UIComponents
 
 @Composable

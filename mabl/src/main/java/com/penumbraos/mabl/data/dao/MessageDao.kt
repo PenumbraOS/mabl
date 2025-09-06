@@ -1,8 +1,9 @@
-package com.penumbraos.mabl.data
+package com.penumbraos.mabl.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import com.penumbraos.mabl.data.types.Message
 import kotlinx.coroutines.flow.Flow
 
 @Dao

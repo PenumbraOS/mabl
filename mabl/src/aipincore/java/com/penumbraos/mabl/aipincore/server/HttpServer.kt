@@ -1,7 +1,7 @@
 package com.penumbraos.mabl.aipincore.server
 
 import com.penumbraos.mabl.aipincore.server.types.ConversationWithMessages
-import com.penumbraos.mabl.data.Conversation
+import com.penumbraos.mabl.data.types.Conversation
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.types.HttpEndpointHandler
