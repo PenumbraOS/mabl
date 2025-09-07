@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.aipincore.server
 
+import android.os.ParcelFileDescriptor
 import com.penumbraos.mabl.aipincore.server.types.AugmentedConversation
 import com.penumbraos.mabl.aipincore.server.types.MessageWithImages
 import com.penumbraos.mabl.data.types.Conversation
@@ -150,7 +151,10 @@ class HttpServer(
                                 "Content-Length" to image.fileSizeBytes.toString(),
                                 "Cache-Control" to "public, max-age=3600" // Cache for 1 hour
                             ),
-                            body = imageFile.readBytes()
+                            file = ParcelFileDescriptor.open(
+                                imageFile,
+                                ParcelFileDescriptor.MODE_READ_ONLY
+                            )
                         )
                     }
                 })
