@@ -10,7 +10,7 @@ import { queryClient } from "./state/query.ts";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <MantineProvider>
+      <MantineProvider defaultColorScheme="dark">
         <App />
       </MantineProvider>
     </QueryClientProvider>
