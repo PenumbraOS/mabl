@@ -1,23 +1,8 @@
-import { useState } from "react";
-import { Conversations } from "./components/Conversations";
-import { Conversation } from "./components/Conversation";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({ routeTree });
 
 export const App = () => {
-  // TODO: Move to router
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | undefined
-  >(undefined);
-
-  return (
-    <div>
-      {!!activeConversationId ? (
-        <Conversation 
-          id={activeConversationId} 
-          onBack={() => setActiveConversationId(undefined)}
-        />
-      ) : (
-        <Conversations setActiveConversationId={setActiveConversationId} />
-      )}
-    </div>
-  );
+  return <RouterProvider router={router} />;
 };

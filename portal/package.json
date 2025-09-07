@@ -14,12 +14,15 @@
     "@mantine/hooks": "^8.2.7",
     "@tabler/icons-react": "^3.34.1",
     "@tanstack/react-query": "^5.85.6",
+    "@tanstack/react-router": "^1.131.35",
+    "@tanstack/react-router-devtools": "^1.131.35",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@tanstack/eslint-plugin-query": "^5.83.1",
+    "@tanstack/router-plugin": "^1.131.35",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
