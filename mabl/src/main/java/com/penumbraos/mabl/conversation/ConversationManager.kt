@@ -295,8 +295,7 @@ class ConversationManager(
         return null
     }
 
-    // Session management methods
-    suspend fun startNewConversation(): ConversationManager {
+    private suspend fun startNewConversation(): ConversationManager {
         Log.d(TAG, "Starting new conversation")
 
         val conversation = conversationRepository.createNewConversation()
@@ -313,71 +312,6 @@ class ConversationManager(
         Log.d(TAG, "Created new conversation: ${conversation.id}")
         return this
     }
-
-//    suspend fun resumeConversation(conversationId: String): Boolean {
-//        Log.d(TAG, "Resuming conversation: $conversationId")
-//
-//        val conversation = conversationRepository.getConversation(conversationId)
-//        if (conversation == null) {
-//            Log.w(TAG, "Conversation not found: $conversationId")
-//            return false
-//        }
-//
-//        this.currentConversationId = conversationId
-//        conversationHistory.clear()
-//        pendingToolCalls.clear()
-//        pendingToolResults.clear()
-//
-//        // Load conversation history from database
-//        val messages = conversationRepository.getConversationMessages(conversationId)
-//
-//        // Convert database messages to SDK messages
-//        for (dbMessage in messages) {
-//            val sdkMessage = ConversationMessage().apply {
-//                type = dbMessage.type
-//                content = dbMessage.content
-//                toolCalls = if (dbMessage.toolCalls != null) {
-//                    try {
-//                        val serializableToolCalls =
-//                            json.decodeFromString<Array<SerializableToolCall>>(dbMessage.toolCalls)
-//                        serializableToolCalls.map { serializable ->
-//                            ToolCall().apply {
-//                                id = serializable.id
-//                                name = serializable.name
-//                                parameters = serializable.parameters
-//                            }
-//                        }.toTypedArray()
-//                    } catch (e: Exception) {
-//                        Log.w(TAG, "Failed to parse tool calls: ${e.message}")
-//                        emptyArray()
-//                    }
-//                } else {
-//                    emptyArray()
-//                }
-//                toolCallId = dbMessage.toolCallId
-//            }
-//            conversationHistory.add(sdkMessage)
-//        }
-//
-//        conversationRepository.updateLastActivity(conversationId)
-//        lastMessageTimestamp = System.currentTimeMillis()
-//
-//        Log.d(TAG, "Resumed conversation $conversationId with ${conversationHistory.size} messages")
-//        return true
-//    }
-//
-//    suspend fun resumeLastConversation(): Boolean {
-//        Log.d(TAG, "Resuming last conversation")
-//
-//        val lastConversation = conversationRepository.getLastActiveConversation()
-//        return if (lastConversation != null) {
-//            resumeConversation(lastConversation.id)
-//        } else {
-//            Log.d(TAG, "No previous conversation found, starting new one")
-//            startNewConversation()
-//            true
-//        }
-//    }
 
     interface ConversationCallback {
         fun onPartialResponse(newToken: String)

@@ -7,5 +7,4 @@ interface IConversationRenderer {
     fun showTranscription(text: String)
     fun showListening(isListening: Boolean)
     fun showError(error: Error)
-    fun clearConversation()
 }

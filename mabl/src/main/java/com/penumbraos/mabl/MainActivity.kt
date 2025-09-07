@@ -125,8 +125,6 @@ class MainActivity : ComponentActivity() {
             controllers.interactionFlowManager.setStateCallback(interactionStateCallback)
             controllers.interactionFlowManager.setContentCallback(interactionContentCallback)
 
-            // TODO: Allow renewing conversation
-            controllers.conversationManager.startNewConversation()
             controllers.interactionFlowManager.setConversationManager(controllers.conversationManager)
 
             uiComponents.platformInputHandler.setup(
