@@ -3,6 +3,7 @@ import * as React from "react";
 import { Alert, Loader } from "@mantine/core";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { IconAlertTriangle } from "@tabler/icons-react";
+import styles from "./QueryWrapper.module.scss";
 
 type ExtractData<T> = T extends { data: unknown } ? T["data"] : never;
 
@@ -19,7 +20,11 @@ export const QueryWrapper = <T extends { data: unknown }>({
   const { isPending, isError, data, error } = result;
 
   if (isPending) {
-    return <Loader color="blue" />;
+    return (
+      <div className={styles.loadingContainer}>
+        <Loader color="blue" size="lg" />
+      </div>
+    );
   }
 
   if (isError) {
