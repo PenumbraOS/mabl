@@ -10,9 +10,11 @@ export const App = () => {
 
   return (
     <div>
-      <div>Hello world</div>
       {!!activeConversationId ? (
-        <Conversation id={activeConversationId} />
+        <Conversation 
+          id={activeConversationId} 
+          onBack={() => setActiveConversationId(undefined)}
+        />
       ) : (
         <Conversations setActiveConversationId={setActiveConversationId} />
       )}

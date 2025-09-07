@@ -28,3 +28,6 @@ export const getConversationById = async (
   id: string
 ): Promise<ConversationWithMessages> =>
   queryFn("GET", `/api/conversation/${id}`);
+
+export const getImageUrl = (fileName: string): string =>
+  `http://${hostname()}/api/image/${fileName}`;

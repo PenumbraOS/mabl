@@ -1,42 +1,151 @@
 import { useQuery } from "@tanstack/react-query";
 import * as React from "react";
-import { getConversationById } from "../state/api";
+import { getConversationById, getImageUrl } from "../state/api";
 import { QueryWrapper } from "./QueryWrapper";
 import type {
   ConversationMessage,
   ConversationWithMessages,
+  ConversationImage,
 } from "../state/types";
+import {
+  Stack,
+  Text,
+  Card,
+  Badge,
+  Image,
+  Button,
+  Group,
+  Box,
+} from "@mantine/core";
+import styles from "../styles/layout.module.scss";
 
 export const Conversation: React.FC<{
   id: string;
-}> = ({ id }) => {
+  onBack?: () => void;
+}> = ({ id, onBack }) => {
   const result = useQuery({
     queryKey: ["conversation", id],
     queryFn: ({ queryKey }) => getConversationById(queryKey[1]),
   });
 
-  return <QueryWrapper result={result} DataComponent={ConversationData} />;
+  return (
+    <QueryWrapper
+      result={result}
+      DataComponent={ConversationData}
+      onBack={onBack}
+    />
+  );
+};
+
+const formatMessageDate = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+};
+
+const MessageImages: React.FC<{ images: ConversationImage[] | undefined }> = ({
+  images,
+}) => {
+  if (!images || images.length === 0) {
+    return null;
+  }
+
+  return (
+    <Group gap="sm" mt="xs">
+      {images.map((image) => (
+        <Box key={image.id} style={{ maxWidth: "300px" }}>
+          <Image
+            src={getImageUrl(image.fileName)}
+            alt={`Image: ${image.fileName}`}
+            fit="contain"
+            radius="md"
+            fallbackSrc="data:image/svg+xml,%3csvg%20width='100'%20height='100'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20fill='%23f8f9fa'/%3e%3ctext%20x='50'%20y='50'%20font-family='Arial'%20font-size='12'%20fill='%23868e96'%20text-anchor='middle'%20dominant-baseline='middle'%3eImage%3c/text%3e%3c/svg%3e"
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            {image.fileName} ({Math.round(image.fileSizeBytes / 1024)} KB)
+            {image.width && image.height && ` • ${image.width}×${image.height}`}
+          </Text>
+        </Box>
+      ))}
+    </Group>
+  );
 };
 
 const ConversationData: React.FC<{
   data: ConversationWithMessages;
-}> = ({ data }) => {
+  onBack?: () => void;
+}> = ({ data, onBack }) => {
   return (
-    <div>
-      <h3>{data.title}</h3>
-      <h4>Messages</h4>
-      <div>
-        {data.messages.map((message) => {
-          return (
-            <div>
-              {displayType(message.type)}
-              <br />
-              {message.content}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <Stack gap="md" p="md" className={styles.pageContainer}>
+      <Group justify="space-between" align="center">
+        <Text size="xl" fw={700} truncate style={{ flex: 1 }}>
+          {data.title}
+        </Text>
+        {onBack && (
+          <Button variant="light" onClick={onBack}>
+            Back to Conversations
+          </Button>
+        )}
+      </Group>
+
+      <Stack gap="md">
+        {data.messages.length > 0 ? (
+          data.messages.map((message, index) => (
+            <Card
+              key={`${message.conversationId}-${index}`}
+              shadow="sm"
+              padding="md"
+              radius="md"
+              withBorder
+            >
+              <Group justify="space-between" align="flex-start" mb="xs">
+                <Badge
+                  color={
+                    message.type === "user"
+                      ? "blue"
+                      : message.type === "assistant"
+                      ? "green"
+                      : "gray"
+                  }
+                  variant="light"
+                >
+                  {displayType(message.type)}
+                </Badge>
+                <Text size="xs" c="dimmed">
+                  {formatMessageDate(message.timestamp)}
+                </Text>
+              </Group>
+
+              {message.content && (
+                <Box>
+                  <Text
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {message.content}
+                  </Text>
+                </Box>
+              )}
+
+              <MessageImages images={message.images} />
+
+              {/* {message.toolCalls && (
+              <Paper withBorder p="xs" mt="sm" bg="gray.0">
+                <Text size="xs" c="dimmed" mb="xs">
+                  Tool calls:
+                </Text>
+                <Text size="xs" ff="monospace">
+                  {JSON.stringify(message.toolCalls, null, 2)}
+                </Text>
+              </Paper>
+            )} */}
+            </Card>
+          ))
+        ) : (
+          <Text c="dimmed" ta="center" mt="xl">
+            No messages in this conversation yet
+          </Text>
+        )}
+      </Stack>
+    </Stack>
   );
 };
 
