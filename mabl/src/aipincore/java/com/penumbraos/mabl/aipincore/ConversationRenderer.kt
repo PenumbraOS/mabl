@@ -4,14 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
-import com.penumbraos.mabl.data.AppDatabase
-import com.penumbraos.mabl.data.repository.MessageRepository
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.types.Error
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.File
 
 private const val TAG = "AiPinConversationRenderer"
@@ -27,9 +22,6 @@ class ConversationRenderer(
     private val listeningSoundEffectFile = File("/sdcard/penumbra/mabl/sounds/listening.mp3")
 
     //    val penumbraClient = PenumbraClient(context)
-    private val messageRepository: MessageRepository by lazy {
-        MessageRepository(AppDatabase.getDatabase(context).messageDao())
-    }
 
     init {
         if (listeningSoundEffectFile.exists()) {
@@ -52,10 +44,6 @@ class ConversationRenderer(
 
     override fun showMessage(message: String, isUser: Boolean) {
         Log.d(TAG, "Message: $message (isUser: $isUser)")
-
-        CoroutineScope(Dispatchers.IO).launch {
-            messageRepository.addMessage(message, isUser)
-        }
 
         if (isUser) {
             statusBroadcaster?.sendUserMessageEvent(message)
@@ -105,12 +93,4 @@ class ConversationRenderer(
             }
         }
     }
-
-    override fun clearConversation() {
-        Log.d(TAG, "Conversation cleared")
-        CoroutineScope(Dispatchers.IO).launch {
-            messageRepository.clearAllMessages()
-        }
-    }
-
 }

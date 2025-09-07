@@ -9,19 +9,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.penumbraos.mabl.data.dao.ConversationDao
 import com.penumbraos.mabl.data.dao.ConversationImageDao
 import com.penumbraos.mabl.data.dao.ConversationMessageDao
-import com.penumbraos.mabl.data.dao.MessageDao
 import com.penumbraos.mabl.data.types.Conversation
 import com.penumbraos.mabl.data.types.ConversationImage
 import com.penumbraos.mabl.data.types.ConversationMessage
-import com.penumbraos.mabl.data.types.Message
 
 @Database(
-    entities = [Message::class, Conversation::class, ConversationMessage::class, ConversationImage::class],
+    entities = [Conversation::class, ConversationMessage::class, ConversationImage::class],
     version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun messageDao(): MessageDao
     abstract fun conversationDao(): ConversationDao
     abstract fun conversationMessageDao(): ConversationMessageDao
     abstract fun conversationImageDao(): ConversationImageDao

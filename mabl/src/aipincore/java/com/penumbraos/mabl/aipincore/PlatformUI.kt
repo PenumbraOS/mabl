@@ -38,7 +38,7 @@ import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
 import com.penumbraos.mabl.data.AppDatabase
-import com.penumbraos.mabl.data.types.Message
+import com.penumbraos.mabl.data.types.ConversationMessage
 import com.penumbraos.mabl.ui.UIComponents
 
 @Composable
@@ -104,7 +104,7 @@ fun PlatformUI(uiComponents: UIComponents) {
 @Composable
 fun ConversationDisplay(
     modifier: Modifier = Modifier,
-    messages: List<Message>,
+    messages: List<ConversationMessage>,
 ) {
     Box(
         modifier = modifier
@@ -122,7 +122,7 @@ fun ConversationDisplay(
 fun ConversationList(
     modifier: Modifier = Modifier,
     navViewModel: NavViewModel = viewModel(),
-    messages: List<Message>,
+    messages: List<ConversationMessage>,
 ) {
     val menuOpen by navViewModel.isMenuOpen
 
@@ -155,13 +155,13 @@ fun ConversationList(
 
 @Composable
 fun MessageItem(
-    message: Message,
+    message: ConversationMessage,
 ) {
     Column(
         modifier = Modifier.padding(12.dp)
     ) {
         PinText(
-            text = if (message.isUser) "You" else "MABL",
+            text = if (message.type == "user") "You" else "MABL",
             style = PinTypography.bodyLarge,
             color = PinColors.secondary
         )
@@ -183,11 +183,12 @@ fun MessageItem(
 @Composable
 fun ConversationDisplayPreview() {
     val messages = listOf(
-        Message(1, "Hello!", true),
-        Message(
+        ConversationMessage(1, "someConversation", "user", "Hello!"),
+        ConversationMessage(
             2,
+            "someConversation",
+            "assistant",
             "Next week in Seoul, expect showers on Thursday morning with temperatures ranging from 25 to 30 degrees. It will be sunny the rest of the week.",
-            false
         )
     )
 
