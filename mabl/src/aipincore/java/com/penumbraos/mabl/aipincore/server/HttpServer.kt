@@ -158,6 +158,126 @@ class HttpServer(
                         )
                     }
                 })
+
+            client.settings.registerHttpEndpoint(
+                HTTP_ID,
+                "/api/camera-roll",
+                "GET",
+                object : HttpEndpointHandler {
+                    override suspend fun handleRequest(request: HttpRequest): HttpResponse {
+                        val limitParam = request.queryParams["limit"]?.toIntOrNull() ?: 50
+                        val offsetParam = request.queryParams["offset"]?.toIntOrNull() ?: 0
+
+                        val images = allControllers.cameraRollService.getCameraRollImages(
+                            limit = limitParam.coerceAtMost(200),
+                            offset = offsetParam.coerceAtLeast(0)
+                        )
+
+                        return HttpResponse(
+                            body = Json.encodeToString(images).toByteArray()
+                        )
+                    }
+                })
+
+            client.settings.registerHttpEndpoint(
+                HTTP_ID,
+                "/api/camera-roll/{imageId}",
+                "GET",
+                object : HttpEndpointHandler {
+                    override suspend fun handleRequest(request: HttpRequest): HttpResponse {
+                        val imageIdParam = request.pathParams["imageId"]
+
+                        if (imageIdParam == null) {
+                            return HttpResponse(
+                                statusCode = 400,
+                                body = Json.encodeToString(mapOf("error" to "Missing imageId parameter"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val imageId = imageIdParam.toLongOrNull()
+                        if (imageId == null) {
+                            return HttpResponse(
+                                statusCode = 400,
+                                body = Json.encodeToString(mapOf("error" to "Invalid imageId parameter"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val image = allControllers.cameraRollService.getCameraRollImageById(imageId)
+
+                        if (image == null) {
+                            return HttpResponse(
+                                statusCode = 404,
+                                body = Json.encodeToString(mapOf("error" to "Image not found"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        return HttpResponse(
+                            body = Json.encodeToString(image).toByteArray()
+                        )
+                    }
+                })
+
+            client.settings.registerHttpEndpoint(
+                HTTP_ID,
+                "/api/camera-roll/{imageId}/file",
+                "GET",
+                object : HttpEndpointHandler {
+                    override suspend fun handleRequest(request: HttpRequest): HttpResponse {
+                        val imageIdParam = request.pathParams["imageId"]
+
+                        if (imageIdParam == null) {
+                            return HttpResponse(
+                                statusCode = 400,
+                                body = Json.encodeToString(mapOf("error" to "Missing imageId parameter"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val imageId = imageIdParam.toLongOrNull()
+                        if (imageId == null) {
+                            return HttpResponse(
+                                statusCode = 400,
+                                body = Json.encodeToString(mapOf("error" to "Invalid imageId parameter"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val image = allControllers.cameraRollService.getCameraRollImageById(imageId)
+
+                        if (image == null) {
+                            return HttpResponse(
+                                statusCode = 404,
+                                body = Json.encodeToString(mapOf("error" to "Image not found"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        val imageFile = java.io.File(image.filePath)
+                        if (!imageFile.exists()) {
+                            return HttpResponse(
+                                statusCode = 404,
+                                body = Json.encodeToString(mapOf("error" to "Image file not found on disk"))
+                                    .toByteArray()
+                            )
+                        }
+
+                        return HttpResponse(
+                            statusCode = 200,
+                            headers = mapOf(
+                                "Content-Type" to image.mimeType,
+                                "Content-Length" to image.size.toString(),
+                                "Cache-Control" to "public, max-age=3600"
+                            ),
+                            file = ParcelFileDescriptor.open(
+                                imageFile,
+                                ParcelFileDescriptor.MODE_READ_ONLY
+                            )
+                        )
+                    }
+                })
         }
     }
 }

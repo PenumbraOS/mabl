@@ -23,6 +23,7 @@ class AllControllers {
     lateinit var conversationManager: ConversationManager
     lateinit var conversationRepository: ConversationRepository
     lateinit var conversationImageRepository: ConversationImageRepository
+    lateinit var cameraRollService: CameraRollService
 
     val allLoaded = CompletableDeferred<Unit>()
 
@@ -49,6 +50,8 @@ class AllControllers {
         )
         conversationImageRepository =
             ConversationImageRepository(context, database.conversationImageDao())
+
+        cameraRollService = CameraRollService(context)
 
         conversationManager =
             ConversationManager(this, context, conversationRepository, conversationImageRepository)

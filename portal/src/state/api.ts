@@ -1,4 +1,4 @@
-import type { Conversation, ConversationWithMessages } from "./types";
+import type { Conversation, ConversationWithMessages, CameraRollImage } from "./types";
 
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -31,3 +31,17 @@ export const getConversationById = async (
 
 export const getImageUrl = (fileName: string): string =>
   `http://${hostname()}/api/image/${fileName}`;
+
+export const getCameraRollImages = async (
+  limit: number = 50,
+  offset: number = 0
+): Promise<CameraRollImage[]> =>
+  queryFn("GET", `/api/camera-roll?limit=${limit}&offset=${offset}`);
+
+export const getCameraRollImageById = async (
+  imageId: number
+): Promise<CameraRollImage> =>
+  queryFn("GET", `/api/camera-roll/${imageId}`);
+
+export const getCameraRollImageUrl = (imageId: number): string =>
+  `http://${hostname()}/api/camera-roll/${imageId}/file`;

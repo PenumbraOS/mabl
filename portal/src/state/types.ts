@@ -31,3 +31,15 @@ export interface ConversationImage {
 export type ConversationWithMessages = Conversation & {
   messages: ConversationMessage[];
 };
+
+export interface CameraRollImage {
+  id: number;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  dateAdded: number;
+  dateTaken: number;
+  width: number;
+  height: number;
+  size: number;
+}

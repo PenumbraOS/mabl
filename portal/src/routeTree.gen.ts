@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CameraRollRouteImport } from './routes/camera-roll'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConversationConversationIdRouteImport } from './routes/conversation.$conversationId'
 
+const CameraRollRoute = CameraRollRouteImport.update({
+  id: '/camera-roll',
+  path: '/camera-roll',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -26,32 +32,43 @@ const ConversationConversationIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/camera-roll': typeof CameraRollRoute
   '/conversation/$conversationId': typeof ConversationConversationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/camera-roll': typeof CameraRollRoute
   '/conversation/$conversationId': typeof ConversationConversationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/camera-roll': typeof CameraRollRoute
   '/conversation/$conversationId': typeof ConversationConversationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/conversation/$conversationId'
+  fullPaths: '/' | '/camera-roll' | '/conversation/$conversationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/conversation/$conversationId'
-  id: '__root__' | '/' | '/conversation/$conversationId'
+  to: '/' | '/camera-roll' | '/conversation/$conversationId'
+  id: '__root__' | '/' | '/camera-roll' | '/conversation/$conversationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CameraRollRoute: typeof CameraRollRoute
   ConversationConversationIdRoute: typeof ConversationConversationIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/camera-roll': {
+      id: '/camera-roll'
+      path: '/camera-roll'
+      fullPath: '/camera-roll'
+      preLoaderRoute: typeof CameraRollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CameraRollRoute: CameraRollRoute,
   ConversationConversationIdRoute: ConversationConversationIdRoute,
 }
 export const routeTree = rootRouteImport
