@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import * as React from "react";
+import { useCallback } from "react";
 import { getCameraRollImages, getCameraRollImageUrl } from "../state/api";
 import { QueryWrapper } from "./QueryWrapper";
+import { ImageGallery } from "./ImageGallery";
+import { useImageGallery } from "../hooks/useImageGallery";
 import type { CameraRollImage } from "../state/types";
+import type { GalleryImage } from "./ImageGallery";
 import {
   Card,
   Text,
@@ -12,7 +16,8 @@ import {
   SimpleGrid,
   Badge,
 } from "@mantine/core";
-import styles from "../styles/layout.module.scss";
+import layoutStyles from "../styles/layout.module.scss";
+import styles from "./CameraRoll.module.scss";
 import { formatHumanDate } from "../util/date";
 
 export const CameraRoll: React.FC = () => {
@@ -21,14 +26,45 @@ export const CameraRoll: React.FC = () => {
     queryFn: () => getCameraRollImages(100), // Get 100 images
   });
 
-  return <QueryWrapper result={result} DataComponent={CameraRollData} />;
+  const gallery = useImageGallery();
+
+  return (
+    <>
+      <QueryWrapper
+        result={result}
+        DataComponent={CameraRollData}
+        gallery={gallery}
+      />
+      <ImageGallery
+        images={gallery.images}
+        initialIndex={gallery.initialIndex}
+        opened={gallery.opened}
+        onClose={gallery.closeGallery}
+      />
+    </>
+  );
 };
 
 const CameraRollData: React.FC<{
   data: CameraRollImage[];
-}> = ({ data }) => {
+  gallery: ReturnType<typeof useImageGallery>;
+}> = ({ data, gallery }) => {
+  const handleImageClick = useCallback(
+    (index: number) => {
+      const galleryImages: GalleryImage[] = data.map((image) => ({
+        id: image.id,
+        src: getCameraRollImageUrl(image.id),
+        alt: image.fileName,
+        title: image.fileName,
+        metadata: `${formatHumanDate(image.dateTaken)} • ${image.width}×${image.height} • ${Math.round(image.size / 1024)} KB`,
+      }));
+
+      gallery.openGallery(galleryImages, index);
+    },
+    [data, gallery]
+  );
   return (
-    <Stack gap="md" p="md" className={styles.pageContainer}>
+    <Stack gap="md" p="md" className={layoutStyles.pageContainer}>
       <Group justify="space-between" align="center">
         <Text size="xl" fw={700}>
           Camera Roll
@@ -40,13 +76,15 @@ const CameraRollData: React.FC<{
 
       {data.length > 0 ? (
         <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing="md">
-          {data.map((image) => (
+          {data.map((image, index) => (
             <Card
               key={image.id}
               shadow="sm"
               padding="xs"
               radius="md"
               withBorder
+              className={styles.imageCard}
+              onClick={() => handleImageClick(index)}
             >
               <Card.Section>
                 <Image
