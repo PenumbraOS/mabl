@@ -74,7 +74,7 @@ jobs:
           # We don't care to time out
           timeout_seconds: 3600
           retry_wait_seconds: 180
-          command: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease :mabl:assembleAndroidRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+          command: ./gradlew assembleRelease :mabl:assembleAipinRelease :mabl:assembleAipinSimulatorRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
       - name: Rename APK files
         run: |
@@ -84,7 +84,7 @@ jobs:
           # Rename main app APKs
           cp mabl/build/outputs/apk/aipin/release/mabl-aipin-release.apk "release-artifacts/PenumbraOS-MABL-AiPin-${VERSION_NAME}.apk"
           cp mabl/build/outputs/apk/aipinSimulator/release/mabl-aipinSimulator-release.apk "release-artifacts/PenumbraOS-MABL-AiPin-Simulator-${VERSION_NAME}.apk"
-          cp mabl/build/outputs/apk/android/release/mabl-android-release.apk "release-artifacts/PenumbraOS-MABL-Android-${VERSION_NAME}.apk"
+          # cp mabl/build/outputs/apk/android/release/mabl-android-release.apk "release-artifacts/PenumbraOS-MABL-Android-${VERSION_NAME}.apk"
 
           # Rename plugin APKs
           cp plugins/demo/build/outputs/apk/release/demo-release.apk "release-artifacts/PenumbraOS-Plugin-Demo-${VERSION_NAME}.apk"
