@@ -46,12 +46,4 @@ class ConversationRenderer(
         errorState.value = error.message
         conversationState.value += "Error: ${error.message}\n"
     }
-
-    override fun clearConversation() {
-        Log.d(TAG, "Conversation cleared")
-        conversationState.value = ""
-        transcriptionState.value = ""
-        errorState.value = ""
-        listeningState.value = false
-    }
 }
