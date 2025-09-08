@@ -1,10 +1,13 @@
 package com.penumbraos.mabl.interaction
 
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.IBinder
+import android.provider.MediaStore
 import android.util.Log
 import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.sdk.ISttCallback
@@ -14,6 +17,10 @@ import com.penumbraos.mabl.types.Error
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val TAG = "InteractionFlowManager"
 
@@ -168,6 +175,60 @@ class InteractionFlowManager
 
     override fun getCurrentFlowState(): InteractionFlowState {
         return currentState
+    }
+
+    override fun takePicture() {
+        coroutineScope.launch {
+            if (isCameraServiceBound && cameraService != null) {
+                val imageData = cameraService!!.takePicture()
+                if (imageData != null) {
+                    Log.d(TAG, "Picture captured")
+                    val imageCollection =
+                        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+                    val timestamp =
+                        SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(
+                            Date()
+                        )
+
+                    val contentValues = ContentValues().apply {
+                        put(
+                            MediaStore.Images.Media.DISPLAY_NAME,
+                            "picture_${timestamp}.png"
+                        )
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                        put(MediaStore.Images.Media.WIDTH, 1920)
+                        put(MediaStore.Images.Media.HEIGHT, 1080)
+                    }
+
+                    var outputStream: OutputStream? = null
+                    var imageUri: Uri? = null
+
+                    try {
+                        imageUri = context.contentResolver.insert(imageCollection, contentValues)
+                        if (imageUri == null) {
+                            throw Exception("Failed to create new MediaStore record.")
+                        }
+
+                        outputStream = context.contentResolver.openOutputStream(imageUri)
+                        if (outputStream == null) {
+                            throw Exception("Failed to get output stream.")
+                        }
+
+                        outputStream.write(imageData)
+                    } catch (e: Exception) {
+                        // Remove pending image if it exists
+                        imageUri?.let { context.contentResolver.delete(it, null, null) }
+                    } finally {
+                        outputStream?.close()
+                    }
+                }
+            } else {
+                Log.e(TAG, "Camera service not available")
+            }
+        }
+
+        return
     }
 
     override fun setConversationManager(conversationManager: ConversationManager?) {

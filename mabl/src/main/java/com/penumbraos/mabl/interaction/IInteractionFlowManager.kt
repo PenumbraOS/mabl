@@ -10,6 +10,8 @@ interface IInteractionFlowManager {
     fun isFlowActive(): Boolean
     fun getCurrentFlowState(): InteractionFlowState
 
+    fun takePicture()
+
     fun setConversationManager(conversationManager: ConversationManager?)
     fun setStateCallback(callback: InteractionStateCallback?)
     fun setContentCallback(callback: InteractionContentCallback?)

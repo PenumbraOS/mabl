@@ -71,6 +71,13 @@ open class PlatformInputHandler(
                     }
 
                     when (gesture.kind) {
+                        TouchpadGestureKind.DOUBLE_TAP -> {
+                            // TODO: Fix double tap with two fingers
+//                            if (gesture.fingerCount == 2) {
+                            interactionFlowManager.takePicture()
+//                            }
+                        }
+
                         TouchpadGestureKind.HOLD_START -> {
                             interactionFlowManager.startListening(requestImage = gesture.fingerCount == 2)
                         }
