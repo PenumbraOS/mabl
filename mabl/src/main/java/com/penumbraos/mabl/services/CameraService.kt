@@ -15,6 +15,7 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureFailure
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.media.ImageReader
 import android.os.Binder
@@ -50,9 +51,15 @@ class CameraService : Service() {
         )
     }
 
+    private val exposureMeteringKey = CaptureRequest.Key<Int>(
+        "org.codeaurora.qcamera3.exposure_metering.exposure_metering_mode",
+        Int::class.java
+    )
+
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
-    private var imageReader: ImageReader? = null
+    private var primaryImageReader: ImageReader? = null
+    private var previewReader: ImageReader? = null
 
     inner class CameraBinder : Binder() {
         fun getService(): CameraService = this@CameraService
@@ -138,7 +145,9 @@ class CameraService : Service() {
         suspendCancellableCoroutine { continuation ->
             try {
                 val cameraId = manager.cameraIdList[0]
-                imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1)
+
+                primaryImageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1)
+                previewReader = ImageReader.newInstance(640, 480, ImageFormat.YUV_420_888, 1)
 
                 manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                     override fun onOpened(camera: CameraDevice) {
@@ -179,7 +188,7 @@ class CameraService : Service() {
         suspendCancellableCoroutine { continuation ->
             try {
                 cameraDevice?.createCaptureSession(
-                    listOf(imageReader!!.surface),
+                    listOf(primaryImageReader!!.surface, previewReader!!.surface),
                     object : CameraCaptureSession.StateCallback() {
                         override fun onConfigured(session: CameraCaptureSession) {
                             Log.d(TAG, "Capture session configured")
@@ -200,14 +209,46 @@ class CameraService : Service() {
         }
     }
 
+    private fun createCaptureBuilder(
+        imageReader: ImageReader,
+        requestTemplate: Int
+    ): CaptureRequest.Builder {
+        val captureBuilder =
+            cameraDevice!!.createCaptureRequest(requestTemplate)
+        captureBuilder.addTarget(imageReader.surface)
+
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AF_MODE,
+            CaptureRequest.CONTROL_AF_MODE_OFF
+        )
+        captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.0f)
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AE_MODE,
+            CaptureRequest.CONTROL_AE_MODE_ON
+        )
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AWB_MODE,
+            CaptureRequest.CONTROL_AWB_MODE_AUTO
+        )
+        captureBuilder.set(
+            CaptureRequest.NOISE_REDUCTION_MODE,
+            CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY
+        )
+        captureBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_HIGH_QUALITY)
+        captureBuilder.set(exposureMeteringKey, 1)
+
+        return captureBuilder
+    }
+
     private suspend fun captureImage(): ByteArray {
         if (cameraDevice == null || captureSession == null) {
             throw Exception("Camera not ready")
         }
 
+        triggerAEPrecapture()
+
         return suspendCancellableCoroutine { continuation ->
-            // Set up image reader callback
-            imageReader?.setOnImageAvailableListener(
+            primaryImageReader?.setOnImageAvailableListener(
                 { reader ->
                     val image = reader.acquireLatestImage()
                     try {
@@ -227,18 +268,7 @@ class CameraService : Service() {
 
             try {
                 val captureBuilder =
-                    cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-                captureBuilder.addTarget(imageReader!!.surface)
-
-                // Set auto-focus and auto-exposure
-                captureBuilder.set(
-                    CaptureRequest.CONTROL_AF_MODE,
-                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-                )
-                captureBuilder.set(
-                    CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON
-                )
+                    createCaptureBuilder(primaryImageReader!!, CameraDevice.TEMPLATE_STILL_CAPTURE)
 
                 val captureCallback = object : CameraCaptureSession.CaptureCallback() {
                     override fun onCaptureCompleted(
@@ -246,7 +276,18 @@ class CameraService : Service() {
                         request: CaptureRequest,
                         result: TotalCaptureResult
                     ) {
-                        Log.d(TAG, "Photo capture completed")
+                        val aeMode = result.get(CaptureResult.CONTROL_AE_MODE)
+                        val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
+                        val aeCompensation =
+                            result.get(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION)
+                        val iso = result.get(CaptureResult.SENSOR_SENSITIVITY)
+                        val exposureTime = result.get(CaptureResult.SENSOR_EXPOSURE_TIME)
+
+                        Log.d(TAG, "Photo capture completed - AE mode: $aeMode, AE state: $aeState")
+                        Log.d(
+                            TAG,
+                            "AE compensation: $aeCompensation, ISO: $iso, exposure time: $exposureTime ns"
+                        )
                     }
 
                     override fun onCaptureFailed(
@@ -259,9 +300,62 @@ class CameraService : Service() {
                 }
 
                 captureSession!!.capture(captureBuilder.build(), captureCallback, backgroundHandler)
-
             } catch (e: CameraAccessException) {
                 Log.e(TAG, "Failed to take picture", e)
+                continuation.resumeWithException(e)
+            }
+        }
+    }
+
+    private suspend fun triggerAEPrecapture() {
+        suspendCancellableCoroutine<Unit> { continuation ->
+            try {
+                val precaptureBuilder =
+                    createCaptureBuilder(previewReader!!, CameraDevice.TEMPLATE_RECORD)
+
+                var hasResumed = false
+                val precaptureCallback = object : CameraCaptureSession.CaptureCallback() {
+                    override fun onCaptureCompleted(
+                        session: CameraCaptureSession,
+                        request: CaptureRequest,
+                        result: TotalCaptureResult
+                    ) {
+                        val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
+
+                        when (aeState) {
+                            CaptureResult.CONTROL_AE_STATE_CONVERGED -> {
+                                if (!hasResumed) {
+                                    hasResumed = true
+                                    Log.d(TAG, "AE converged")
+                                    captureSession?.stopRepeating()
+                                    continuation.resume(Unit)
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onCaptureFailed(
+                        session: CameraCaptureSession,
+                        request: CaptureRequest,
+                        failure: CaptureFailure
+                    ) {
+                        if (!hasResumed) {
+                            hasResumed = true
+                            Log.w(TAG, "AE precapture failed, proceeding anyway")
+                            captureSession?.stopRepeating()
+                            continuation.resume(Unit)
+                        }
+                    }
+                }
+
+                captureSession!!.setRepeatingRequest(
+                    precaptureBuilder.build(),
+                    precaptureCallback,
+                    backgroundHandler
+                )
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to trigger AE precapture", e)
                 continuation.resumeWithException(e)
             }
         }
@@ -274,7 +368,10 @@ class CameraService : Service() {
         cameraDevice?.close()
         cameraDevice = null
 
-        imageReader?.close()
-        imageReader = null
+        primaryImageReader?.close()
+        primaryImageReader = null
+
+        previewReader?.close()
+        previewReader = null
     }
 }
