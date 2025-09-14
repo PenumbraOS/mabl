@@ -24,9 +24,13 @@ class ConversationRenderer(
     //    val penumbraClient = PenumbraClient(context)
 
     init {
-        if (listeningSoundEffectFile.exists()) {
-            listeningMediaPlayer.setDataSource(listeningSoundEffectFile.absolutePath)
-            listeningMediaPlayer.prepareAsync()
+        try {
+            if (listeningSoundEffectFile.exists()) {
+                listeningMediaPlayer.setDataSource(listeningSoundEffectFile.absolutePath)
+                listeningMediaPlayer.prepareAsync()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load listening sound effect", e)
         }
     }
 
