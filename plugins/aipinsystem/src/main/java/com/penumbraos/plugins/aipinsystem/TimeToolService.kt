@@ -1,6 +1,5 @@
 package com.penumbraos.plugins.aipinsystem
 
-import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper

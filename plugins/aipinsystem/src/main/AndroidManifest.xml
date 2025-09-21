@@ -5,6 +5,21 @@
 
     <application>
         <service
+            android:name=".BatteryToolService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.TOOL_SERVICE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Battery Tool Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="Tool that provides the current battery level" />
+        </service>
+
+        <service
             android:name=".TimeToolService"
             android:exported="true">
             <intent-filter>
