@@ -56,7 +56,7 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
 
         conversationManager =
             ConversationManager(this, context, conversationRepository, conversationImageRepository)
-        interactionFlowManager = InteractionFlowManager(this, context, viewModel)
+        interactionFlowManager = InteractionFlowManager(this, context)
 
         connectAll(context)
     }
