@@ -55,12 +55,12 @@ android {
             buildConfigField("boolean", "IS_AI_PIN", "true")
             buildConfigField("boolean", "IS_SIMULATOR", "true")
         }
-        create("android") {
-            dimension = "device"
-            applicationIdSuffix = ".android"
-            buildConfigField("boolean", "IS_AI_PIN", "false")
-            buildConfigField("boolean", "IS_SIMULATOR", "false")
-        }
+//        create("android") {
+//            dimension = "device"
+//            applicationIdSuffix = ".android"
+//            buildConfigField("boolean", "IS_AI_PIN", "false")
+//            buildConfigField("boolean", "IS_SIMULATOR", "false")
+//        }
     }
 
     sourceSets {
