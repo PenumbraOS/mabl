@@ -9,11 +9,15 @@ import kotlinx.coroutines.CoroutineScope
 class UIFactory(
     coroutineScope: CoroutineScope,
     private val context: Context,
-    controllers: AllControllers,
+    private val controllers: AllControllers,
 ) : com.penumbraos.mabl.aipincore.UIFactory(coroutineScope, context, controllers) {
     private val statusBroadcaster = SettingsStatusBroadcaster(context, coroutineScope)
 
     override fun createPlatformInputHandler(): IPlatformInputHandler {
-        return SimulatorInputHandler(statusBroadcaster, viewModel, createPlatformCapabilities())
+        return SimulatorInputHandler(
+            statusBroadcaster,
+            controllers.viewModel,
+            createPlatformCapabilities()
+        )
     }
 }

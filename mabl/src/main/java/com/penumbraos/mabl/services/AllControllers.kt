@@ -3,6 +3,7 @@ package com.penumbraos.mabl.services
 import android.content.Context
 import android.util.Log
 import com.penumbraos.mabl.BuildConfig
+import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.repository.ConversationImageRepository
@@ -14,7 +15,10 @@ import kotlinx.coroutines.CoroutineScope
 private const val TAG = "AllControllers"
 
 // TODO: Find a better name
-class AllControllers {
+class AllControllers(coroutineScope: CoroutineScope, private val context: Context) {
+    val viewModel =
+        PlatformViewModel(coroutineScope, context, AppDatabase.getDatabase(context))
+
     lateinit var llm: LlmController
     lateinit var stt: SttController
     lateinit var tts: TtsController
@@ -33,10 +37,7 @@ class AllControllers {
         }
     }
 
-    fun initialize(
-        context: Context,
-        coroutineScope: CoroutineScope
-    ) {
+    suspend fun initialize() {
         llm = LlmController { checkAllConnected() }
         stt = SttController { checkAllConnected() }
         tts = TtsController { checkAllConnected() }
@@ -56,9 +57,11 @@ class AllControllers {
         conversationManager =
             ConversationManager(this, context, conversationRepository, conversationImageRepository)
         interactionFlowManager = InteractionFlowManager(this, context)
+
+        connectAll(context)
     }
 
-    suspend fun connectAll(context: Context) {
+    private suspend fun connectAll(context: Context) {
         // TODO: These packages shouldn't be hardcoded
         if (BuildConfig.IS_SIMULATOR) {
             // In simulator mode, use more resilient connection approach

@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
-    private val controllers = AllControllers()
+    private lateinit var controllers: AllControllers
     private lateinit var uiComponents: UIComponents
 
     private val interactionStateCallback = object : InteractionStateCallback {
@@ -115,12 +115,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        controllers.initialize(this, lifecycleScope)
-
-        initializeUIComponents()
-
         lifecycleScope.launch {
-            controllers.connectAll(this@MainActivity)
+            controllers = AllControllers(lifecycleScope, this@MainActivity)
+            controllers.initialize()
+
+            val uiFactory = UIFactory(
+                lifecycleScope,
+                context = this@MainActivity,
+                controllers,
+            )
+
+            uiComponents = uiFactory.createUIComponents()
 
             controllers.interactionFlowManager.setStateCallback(interactionStateCallback)
             controllers.interactionFlowManager.setContentCallback(interactionContentCallback)

@@ -1,8 +1,6 @@
 package com.penumbraos.mabl.aipincore
 
 import android.content.Context
-import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
-import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.services.AllControllers
 import com.penumbraos.mabl.ui.UIComponents
 import com.penumbraos.mabl.ui.interfaces.IConversationRenderer
@@ -17,8 +15,6 @@ open class UIFactory(
     private val controllers: AllControllers,
 ) {
     private val statusBroadcaster = SettingsStatusBroadcaster(context, coroutineScope)
-    internal val viewModel =
-        PlatformViewModel(coroutineScope, context, AppDatabase.getDatabase(context))
 
     private val client = PenumbraClient(context)
 
@@ -27,11 +23,11 @@ open class UIFactory(
     }
 
     open fun createPlatformInputHandler(): IPlatformInputHandler {
-        return PlatformInputHandler(statusBroadcaster, viewModel)
+        return PlatformInputHandler(statusBroadcaster, controllers.viewModel)
     }
 
     open fun createPlatformCapabilities(): IPlatformCapabilities {
-        return PlatformCapabilities(coroutineScope, controllers, viewModel, client)
+        return PlatformCapabilities(coroutineScope, controllers, controllers.viewModel, client)
     }
 
     fun createUIComponents(): UIComponents {
