@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.penumbraos.mabl.interaction.InteractionContentCallback
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private lateinit var controllers: AllControllers
     private lateinit var uiComponents: UIComponents
+    private var uiComponentsState = mutableStateOf<UIComponents?>(null)
 
     private val interactionStateCallback = object : InteractionStateCallback {
         override fun onListeningStarted() {
@@ -138,6 +140,7 @@ class MainActivity : ComponentActivity() {
                 interactionFlowManager = controllers.interactionFlowManager
             )
 
+            uiComponentsState.value = uiComponents
             Log.d("MainActivity", "Centralized interaction flow initialized")
         }
 
@@ -154,8 +157,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Content() {
-        if (::uiComponents.isInitialized) {
-            PlatformUI(uiComponents)
+        if (uiComponentsState.value != null) {
+            PlatformUI(uiComponentsState.value!!)
         } else {
             // Show loading state while services are connecting
             Box(
