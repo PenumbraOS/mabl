@@ -34,6 +34,7 @@ import com.open.pin.ui.utils.PinDimensions
 import com.open.pin.ui.utils.modifiers.ProvideSnapCoordinator
 import com.open.pin.ui.utils.modifiers.SnapCoordinator
 import com.penumbraos.mabl.aipincore.view.TouchInterceptor
+import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
 import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
@@ -69,6 +70,12 @@ fun PlatformUI(uiComponents: UIComponents) {
     LaunchedEffect(Unit) {
         actualViewModel.backGestureEvent.collect {
             backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        actualViewModel.openCurrentConversationEvent.collect {
+            actualViewModel.navViewModel.pushView(ConversationsNav)
         }
     }
 

@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
+import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.conversation.ConversationManager
 import com.penumbraos.mabl.sdk.ISttCallback
 import com.penumbraos.mabl.services.AllControllers
@@ -33,6 +34,7 @@ class InteractionFlowManager
     (
     private val allControllers: AllControllers,
     private val context: Context,
+    private val viewModel: PlatformViewModel
 ) : IInteractionFlowManager {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -117,6 +119,9 @@ class InteractionFlowManager
             stateCallback?.onError(Error.FlowError("No active conversation"))
             return
         }
+
+        // TODO: Possibly start on first partial STT result
+        allControllers.viewModel.openCurrentConversation()
 
         setState(InteractionFlowState.PROCESSING)
 

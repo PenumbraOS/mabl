@@ -24,6 +24,9 @@ class PlatformViewModel(
     private val _backGestureChannel = Channel<Unit>(Channel.RENDEZVOUS)
     val backGestureEvent = _backGestureChannel.receiveAsFlow()
 
+    private val _openCurrentConversationChannel = Channel<Unit>(Channel.RENDEZVOUS)
+    val openCurrentConversationEvent = _openCurrentConversationChannel.receiveAsFlow()
+
     private val _debugChannel = Channel<Boolean>()
     val debugChannel = _debugChannel.receiveAsFlow()
 
@@ -42,6 +45,11 @@ class PlatformViewModel(
                     }
                 })
         }
+    }
+
+    fun openCurrentConversation() {
+        Log.d("PlatformViewModel", "Opening conversation")
+        _openCurrentConversationChannel.trySend(Unit)
     }
 
     fun backGesture() {

@@ -12,12 +12,16 @@ data object DummyNav
 
 class NavViewModel() : ViewModel() {
     val backStack = mutableStateListOf<Any>(HomeNav)
-    
+
     val isMenuOpen = derivedStateOf {
         backStack.lastOrNull() == MenuNav
     }
 
     fun pushView(view: Any) {
+        if (backStack.lastOrNull() == view) {
+            return
+        }
+
         backStack.add(view)
     }
 
