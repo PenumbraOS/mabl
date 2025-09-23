@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 data object HomeNav
 data object MenuNav
 data object ConversationsNav
+data class ConversationDisplayNav(val conversationId: String)
 data object SettingsNav
 data object DummyNav
 

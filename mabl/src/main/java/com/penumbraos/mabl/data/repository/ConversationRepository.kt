@@ -5,6 +5,7 @@ import com.penumbraos.mabl.data.dao.ConversationMessageDao
 import com.penumbraos.mabl.data.types.Conversation
 import com.penumbraos.mabl.data.types.ConversationMessage
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class ConversationRepository(
     private val conversationDao: ConversationDao,
@@ -18,6 +19,9 @@ class ConversationRepository(
     suspend fun getConversation(id: String): Conversation? = conversationDao.getConversation(id)
 
     suspend fun getLastActiveConversation(): Conversation? =
+        conversationDao.getLastActiveConversation().first()
+
+    fun getLastActiveConversationFlow(): Flow<Conversation?> =
         conversationDao.getLastActiveConversation()
 
     suspend fun createNewConversation(title: String = "New Conversation"): Conversation {

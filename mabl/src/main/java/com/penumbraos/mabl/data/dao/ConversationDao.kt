@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.penumbraos.mabl.data.types.Conversation
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ConversationDao {
@@ -15,7 +16,7 @@ interface ConversationDao {
     suspend fun getConversation(id: String): Conversation?
 
     @Query("SELECT * FROM conversations ORDER BY lastActivity DESC LIMIT 1")
-    suspend fun getLastActiveConversation(): Conversation?
+    fun getLastActiveConversation(): Flow<Conversation?>
 
     @Insert
     suspend fun insertConversation(conversation: Conversation)

@@ -7,6 +7,7 @@ import com.penumbraos.mabl.aipincore.SETTING_APP_ID
 import com.penumbraos.mabl.aipincore.SETTING_DEBUG_CATEGORY
 import com.penumbraos.mabl.aipincore.SETTING_DEBUG_CURSOR
 import com.penumbraos.mabl.data.AppDatabase
+import com.penumbraos.mabl.data.repository.ConversationRepository
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.BooleanSettingListener
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +30,11 @@ class PlatformViewModel(
 
     private val _debugChannel = Channel<Boolean>()
     val debugChannel = _debugChannel.receiveAsFlow()
+
+    val conversationRepository = ConversationRepository(
+        database.conversationDao(),
+        database.conversationMessageDao()
+    )
 
     init {
         coroutineScope.launch {

@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.open.pin.ui.components.text.PinText
+import com.penumbraos.mabl.aipincore.view.model.ConversationDisplayNav
 import com.penumbraos.mabl.aipincore.view.model.ConversationsNav
 import com.penumbraos.mabl.aipincore.view.model.HomeNav
 import com.penumbraos.mabl.aipincore.view.model.MenuNav
@@ -68,6 +69,10 @@ fun Navigation(navViewModel: NavViewModel = viewModel<NavViewModel>()) {
 
                 ConversationsNav -> NavEntry(key) {
                     Conversations()
+                }
+
+                is ConversationDisplayNav -> NavEntry(key) {
+                    ConversationDisplay(key.conversationId)
                 }
 
                 SettingsNav -> NavEntry(key) {
