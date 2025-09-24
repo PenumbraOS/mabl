@@ -10,6 +10,7 @@ import com.penumbraos.sdk.api.types.HttpEndpointHandler
 import com.penumbraos.sdk.api.types.HttpRequest
 import com.penumbraos.sdk.api.types.HttpResponse
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,7 +34,7 @@ class HttpServer(
                 object : HttpEndpointHandler {
                     override suspend fun handleRequest(request: HttpRequest): HttpResponse {
                         val conversations =
-                            allControllers.conversationRepository.getAllConversations()
+                            allControllers.conversationRepository.getAllConversations().first()
                         return HttpResponse(
                             body = Json.encodeToString<List<Conversation>>(
                                 conversations

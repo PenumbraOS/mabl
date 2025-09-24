@@ -13,7 +13,7 @@ class ConversationRepository(
     private val conversationImageRepository: ConversationImageRepository? = null
 ) {
 
-    fun getAllConversations(limit: Int = 50): List<Conversation> =
+    fun getAllConversations(limit: Int = 50): Flow<List<Conversation>> =
         conversationDao.getAllConversations(limit)
 
     suspend fun getConversation(id: String): Conversation? = conversationDao.getConversation(id)

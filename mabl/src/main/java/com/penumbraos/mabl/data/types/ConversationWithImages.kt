@@ -5,16 +5,6 @@ import androidx.room.Relation
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ConversationWithMessages(
-    @Embedded val conversation: Conversation,
-    @Relation(
-        parentColumn = "id",
-        entityColumn = "conversationId"
-    )
-    val messages: List<ConversationMessage> = emptyList()
-)
-
-@Serializable
 data class ConversationMessageWithImages(
     @Embedded val message: ConversationMessage,
     @Relation(

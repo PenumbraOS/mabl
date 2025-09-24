@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ConversationDao {
     @Query("SELECT * FROM conversations ORDER BY lastActivity DESC LIMIT :limit")
-    fun getAllConversations(limit: Int = 50): List<Conversation>
+    fun getAllConversations(limit: Int = 50): Flow<List<Conversation>>
 
     @Query("SELECT * FROM conversations WHERE id = :id")
     suspend fun getConversation(id: String): Conversation?
