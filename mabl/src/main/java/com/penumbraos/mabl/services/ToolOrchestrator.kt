@@ -37,11 +37,12 @@ class ToolOrchestrator(
         val toolServices = pluginManager.discoverServices(PluginType.TOOL)
 
         for (serviceInfo in toolServices) {
+            val serviceKey = "${serviceInfo.packageName}/${serviceInfo.className}"
             val controller = ToolController {
-                onToolServiceConnected(serviceInfo.packageName)
+                onToolServiceConnected(serviceKey)
             }
-            serviceControllers[serviceInfo.packageName] = controller
-            serviceInfoMap[serviceInfo.packageName] = serviceInfo
+            serviceControllers[serviceKey] = controller
+            serviceInfoMap[serviceKey] = serviceInfo
         }
     }
 
@@ -51,8 +52,9 @@ class ToolOrchestrator(
             return
         }
 
-        for ((packageName, controller) in serviceControllers) {
-            controller.connect(context, packageName)
+        for ((serviceKey, controller) in serviceControllers) {
+            val serviceInfo = serviceInfoMap[serviceKey] ?: continue
+            controller.connect(context, serviceInfo.packageName, serviceInfo.className)
         }
 
         allConnected.await()
@@ -75,8 +77,8 @@ class ToolOrchestrator(
         }
     }
 
-    private fun onToolServiceConnected(packageName: String) {
-        val controller = serviceControllers[packageName]
+    private fun onToolServiceConnected(serviceKey: String) {
+        val controller = serviceControllers[serviceKey]
         controller?.service?.setSystemServices(systemServiceRegistry)
 
         connectedServicesCount++
@@ -89,7 +91,7 @@ class ToolOrchestrator(
         allTools.clear()
         toolToServiceMap.clear()
 
-        for ((packageName, controller) in serviceControllers) {
+        for ((serviceKey, controller) in serviceControllers) {
             controller.service?.let { service ->
                 try {
                     val definitions = service.toolDefinitions
@@ -99,7 +101,7 @@ class ToolOrchestrator(
                         toolToServiceMap[toolDef.name] = service
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error getting tool definitions from $packageName", e)
+                    Log.e(TAG, "Error getting tool definitions from $serviceKey", e)
                 }
             }
         }

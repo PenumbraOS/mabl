@@ -45,9 +45,13 @@ abstract class ServiceController<T>(
 
     }
 
-    fun connect(context: Context, packageName: String) {
+    fun connect(context: Context, packageName: String, className: String? = null) {
         val intent = Intent(pluginType.action).apply {
-            setPackage(packageName)
+            if (className != null) {
+                setClassName(packageName, className)
+            } else {
+                setPackage(packageName)
+            }
         }
 
         // Force services to be active using foreground service
