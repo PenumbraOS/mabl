@@ -113,7 +113,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                             }
                         }
                     )
-                Log.d(
+                Log.w(
                     TAG,
                     "OpenAI client initialized successfully with model: ${currentConfig!!.model}"
                 )
@@ -136,9 +136,9 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
             tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {
-            Log.d(
+            Log.w(
                 TAG,
-                "Received ${messages.size} conversation messages with ${tools.size} filtered tools"
+                "Submitting ${messages.size} conversation messages with ${tools.size} filtered tools. Last message: \"${messages.last().content}\""
             )
 
             if (openAI == null) {
@@ -268,9 +268,13 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                         text = responseBuilder.toString()
                         this.toolCalls = toolCalls.toTypedArray()
                     }
-                    Log.d(
+
+                    val flattenedCalls = toolCalls.joinToString {
+                        "id: ${it.id}, name: ${it.name}, parameters: ${it.parameters}"
+                    }
+                    Log.w(
                         TAG,
-                        "Streaming completed, message count: $messageCount, response: $response"
+                        "LLM response received: \"${response.text}\", $flattenedCalls"
                     )
                     callback.onCompleteResponse(response)
                 } catch (e: Exception) {
