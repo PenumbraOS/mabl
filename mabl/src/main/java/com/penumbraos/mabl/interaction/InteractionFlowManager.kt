@@ -131,6 +131,8 @@ class InteractionFlowManager
                 imageInput = takeGroundingImage()
             }
 
+            allControllers.soundEffectManager.playWaitingEffect()
+
             conversationManager!!.startOrContinueConversationWithMessage(
                 userInput,
                 imageInput,
@@ -147,6 +149,7 @@ class InteractionFlowManager
 
                     override fun onCompleteResponse(finalResponse: String) {
                         Log.d(TAG, "LLM complete response: $finalResponse")
+                        allControllers.soundEffectManager.stopWaitingEffect()
                         contentCallback?.onFinalResponse(finalResponse)
                         setState(InteractionFlowState.IDLE)
                     }

@@ -9,6 +9,7 @@ import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.repository.ConversationImageRepository
 import com.penumbraos.mabl.data.repository.ConversationRepository
 import com.penumbraos.mabl.interaction.InteractionFlowManager
+import com.penumbraos.mabl.sound.SoundEffectManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 
@@ -28,6 +29,8 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
     lateinit var conversationRepository: ConversationRepository
     lateinit var conversationImageRepository: ConversationImageRepository
     lateinit var cameraRollService: CameraRollService
+
+    val soundEffectManager = SoundEffectManager()
 
     val allLoaded = CompletableDeferred<Unit>()
 
