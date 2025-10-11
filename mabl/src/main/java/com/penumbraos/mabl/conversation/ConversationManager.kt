@@ -46,6 +46,8 @@ class ConversationManager(
     private val json = Json { ignoreUnknownKeys = true }
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
+    private val staticQueryManager = StaticQueryManager(allControllers, coroutineScope)
+
     private var lastMessageTimestamp: Long = 0
 
     suspend fun startOrContinueConversationWithMessage(
@@ -75,6 +77,14 @@ class ConversationManager(
             toolCallId = null
         }
         conversationHistory.add(message)
+
+        val staticQueryResult = staticQueryManager.evaluateStaticQuery(userMessage)
+
+        if (staticQueryResult != null) {
+            Log.w(TAG, "Static query matched: $userMessage. Result: $staticQueryResult")
+            callback.onCompleteResponse(staticQueryResult)
+            return
+        }
 
         // Filter tools based on user query before sending to LLM
         val filteredTools = runBlocking {
@@ -295,7 +305,7 @@ class ConversationManager(
         return null
     }
 
-    private suspend fun startNewConversation(): ConversationManager {
+    suspend fun startNewConversation(): ConversationManager {
         Log.d(TAG, "Starting new conversation")
 
         val conversation = conversationRepository.createNewConversation()

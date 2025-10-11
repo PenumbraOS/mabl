@@ -150,6 +150,10 @@ class InteractionFlowManager
                     override fun onCompleteResponse(finalResponse: String) {
                         Log.d(TAG, "LLM complete response: $finalResponse")
                         allControllers.soundEffectManager.stopWaitingEffect()
+                        if (currentState == InteractionFlowState.PROCESSING) {
+                            // We never sent any partial responses. Make sure we send at least one
+                            onPartialResponse(finalResponse)
+                        }
                         contentCallback?.onFinalResponse(finalResponse)
                         setState(InteractionFlowState.IDLE)
                     }
@@ -163,7 +167,7 @@ class InteractionFlowManager
             )
         }
     }
-
+    
     override fun finishListening() {
         Log.d(TAG, "Stopping listening, state: $currentState")
         setState(InteractionFlowState.CANCELLING)
