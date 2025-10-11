@@ -46,7 +46,7 @@ class ConversationManager(
     private val json = Json { ignoreUnknownKeys = true }
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    private val staticQueryManager = StaticQueryManager(allControllers, coroutineScope)
+    private val staticQueryManager = StaticQueryManager(allControllers, context, coroutineScope)
 
     private var lastMessageTimestamp: Long = 0
 

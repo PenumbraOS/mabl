@@ -1,5 +1,6 @@
 package com.penumbraos.mabl.conversation
 
+import android.content.Context
 import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
@@ -9,8 +10,12 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-class StaticQueryManager(allControllers: AllControllers, coroutineScope: CoroutineScope) {
-    private val toolService = StaticQueryToolService(allControllers, coroutineScope)
+class StaticQueryManager(
+    allControllers: AllControllers,
+    context: Context,
+    coroutineScope: CoroutineScope
+) {
+    private val toolService = StaticQueryToolService(allControllers, context, coroutineScope)
 
     private var toolMap: Map<String, ToolDefinition>? = null
 
