@@ -7,10 +7,10 @@ adb shell appops set com.penumbraos.mabl.pin MANAGE_EXTERNAL_STORAGE allow
 adb shell appops set com.penumbraos.plugins.openai MANAGE_EXTERNAL_STORAGE allow
 adb shell pm disable-user --user 0 humane.experience.systemnavigation
 sleep 1
-adb shell cmd package set-home-activity com.penumbraos.mabl/.MainActivity
+adb shell cmd package set-home-activity com.penumbraos.mabl.pin/com.penumbraos.mabl.MainActivity
 sleep 1
 # I think one of these works
-adb shell settings put secure launcher_component com.penumbraos.mabl/.MainActivity
-adb shell settings put system home_app com.penumbraos.mabl
-adb shell settings put global default_launcher com.penumbraos.mabl/.MainActivity
+adb shell settings put secure launcher_component com.penumbraos.mabl.pin/com.penumbraos.mabl.MainActivity
+adb shell settings put system home_app com.penumbraos.mabl.pin
+adb shell settings put global default_launcher com.penumbraos.mabl.pin/com.penumbraos.mabl.MainActivity
 echo "Built on $(date '+%Y-%m-%d %H:%M:%S')"
