@@ -19,8 +19,16 @@ class NavViewModel() : ViewModel() {
     }
 
     fun pushView(view: Any) {
-        if (backStack.lastOrNull() == view) {
+        val last = backStack.lastOrNull()
+
+        if (last == view) {
             return
+        }
+
+        if (last != null && last::class == view::class) {
+            // Same class, but not same identity, means this has fields that are likely different
+            // Replace this element
+            backStack.removeLastOrNull()
         }
 
         backStack.add(view)
