@@ -160,6 +160,7 @@ class InteractionFlowManager
 
                     override fun onError(error: String) {
                         Log.e(TAG, "Conversation error: $error")
+                        allControllers.soundEffectManager.stopWaitingEffect()
                         setState(InteractionFlowState.IDLE)
                         stateCallback?.onError(Error.LlmError("Conversation error: $error"))
                     }
