@@ -16,7 +16,6 @@ import com.aallam.openai.client.OpenAIHost
 import com.penumbraos.mabl.sdk.BinderConversationMessage
 import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ILlmCallback
-import com.penumbraos.mabl.sdk.ILlmConfigCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
 import com.penumbraos.mabl.sdk.MablService
@@ -31,12 +30,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
-import kotlin.coroutines.resume
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -72,14 +69,12 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
     private var openAI: OpenAI? = null
-    private lateinit var configService: LlmConfigService
+    private val configManager = LlmConfigManager()
     private var currentConfig: LlmConfiguration? = null
 
     @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
-
-        configService = LlmConfigService()
 
         llmScope.launch {
             var client: PenumbraClient? = null
@@ -87,8 +82,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                 client = PenumbraClient(this@OpenAiLlmService)
                 client.waitForBridge()
             }
-            // Load configuration from service
-            loadCurrentConfig()
+            currentConfig = configManager.getAvailableConfigs().first()
 
             if (currentConfig == null) {
                 Log.e(TAG, "No valid LLM configuration found")
@@ -317,40 +311,6 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         )
 
         return Parameters.fromJsonString(Json.encodeToString(ParameterSchema.serializer(), schema))
-    }
-
-    private suspend fun loadCurrentConfig() {
-        try {
-            val configNames = suspendCancellableCoroutine<Array<String>> { continuation ->
-                configService.getAvailableConfigs(object : ILlmConfigCallback.Stub() {
-                    override fun onConfigsLoaded(configs: Array<out String?>?) {
-                        val nonNullConfigs =
-                            configs?.filterNotNull()?.toTypedArray() ?: emptyArray()
-                        continuation.resume(nonNullConfigs)
-                    }
-
-                    override fun onError(error: String?) {
-                        Log.e(TAG, "Error loading configurations: $error")
-                        continuation.resume(emptyArray())
-                    }
-                })
-            }
-
-            // Get the first config by name if available
-            currentConfig = if (configNames.isNotEmpty()) {
-                configService.getConfigByName(configNames.first())
-            } else {
-                null
-            }
-
-            Log.d(
-                TAG,
-                "Loaded configuration: ${currentConfig?.name ?: "no configuration found, using defaults"}"
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load configuration", e)
-            currentConfig = null
-        }
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
