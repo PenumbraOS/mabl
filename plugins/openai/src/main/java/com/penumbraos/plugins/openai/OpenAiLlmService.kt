@@ -82,7 +82,12 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                 client = PenumbraClient(this@OpenAiLlmService)
                 client.waitForBridge()
             }
-            currentConfig = configManager.getAvailableConfigs().first()
+
+            try {
+                currentConfig = configManager.getAvailableConfigs().first()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load LLM configuration", e)
+            }
 
             if (currentConfig == null) {
                 Log.e(TAG, "No valid LLM configuration found")
