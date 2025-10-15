@@ -101,22 +101,27 @@ class ConversationManager(
             "Sending ${conversationHistory.size} messages with ${filteredTools.size} filtered tools: ${filteredTools.map { it.name }}"
         )
 
-        allControllers.llm.service?.generateResponse(
-            conversationHistory.toTypedArray(),
-            filteredTools,
-            object : ILlmCallback.Stub() {
-                override fun onPartialResponse(newToken: String) {
-                    callback.onPartialResponse(newToken)
-                }
+        try {
+            allControllers.llm.service!!.generateResponse(
+                conversationHistory.toTypedArray(),
+                filteredTools,
+                object : ILlmCallback.Stub() {
+                    override fun onPartialResponse(newToken: String) {
+                        callback.onPartialResponse(newToken)
+                    }
 
-                override fun onCompleteResponse(response: LlmResponse) {
-                    handleLlmResponse(response, filteredTools, callback)
-                }
+                    override fun onCompleteResponse(response: LlmResponse) {
+                        handleLlmResponse(response, filteredTools, callback)
+                    }
 
-                override fun onError(error: String) {
-                    callback.onError(error)
-                }
-            })
+                    override fun onError(error: String) {
+                        callback.onError(error)
+                    }
+                })
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to generate response: $e")
+            callback.onError("Failed to generate response: $e")
+        }
     }
 
     private fun handleLlmResponse(
