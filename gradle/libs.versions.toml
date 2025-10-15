@@ -16,7 +16,7 @@ penumbraos-sdk = "783df84"
 penumbraos-sdk-local = "0.1.0"
 moonlight-ui = "220702a"
 moonlight-ui-local = "0.1.0"
-openai-client = "4.0.1"
+openai-client = "1ea7a35"
 ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
@@ -57,7 +57,7 @@ penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = 
 #penumbraos-sdk = { group = "com.penumbraos", name = "sdk", version.ref = "penumbraos-sdk-local" }
 moonlight-ui = { group = "com.github.agg23", name = "moonlight", version.ref = "moonlight-ui" }
 #moonlight-ui = { group = "com.open.pin", name = "ui", version.ref = "moonlight-ui-local" }
-openai-client = { group = "com.aallam.openai", name = "openai-client", version.ref = "openai-client" }
+openai-client = { group = "com.github.agg23.openai-kotlin", name = "openai-client", version.ref = "openai-client" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }
 ktor-content-negociation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor-client" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor-client" }
