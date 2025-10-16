@@ -26,7 +26,7 @@ class BatteryToolService : ToolService("BatteryToolService") {
 
     override fun executeTool(call: ToolCall, params: JSONObject?, callback: IToolCallback) {
         when (call.name) {
-            GET_BATTERY_LEVELS_TOOL -> getBatteryLevels(callback)
+            GET_BATTERY_LEVELS_TOOL -> getBatteryLevels(call.isLLM, callback)
             else -> callback.onError("Unknown tool: ${call.name}")
         }
     }
@@ -37,12 +37,17 @@ class BatteryToolService : ToolService("BatteryToolService") {
                 name = GET_BATTERY_LEVELS_TOOL
                 description =
                     "Get battery levels and status for main and expansion batteries. The expansion battery is called the 'booster'"
+                examples = arrayOf(
+                    "what's my battery",
+                    "battery status",
+                    "how much charge do i have"
+                )
                 parameters = emptyArray()
             }
         )
     }
 
-    private fun getBatteryLevels(callback: IToolCallback) {
+    private fun getBatteryLevels(isLLM: Boolean, callback: IToolCallback) {
         try {
             val boosterInfo = client.accessory.getBatteryInfo()
             val boosterBatteryIsConnected = boosterInfo?.isConnected == true
@@ -82,7 +87,15 @@ class BatteryToolService : ToolService("BatteryToolService") {
 
             Log.d(TAG, "Battery levels: $result")
 
-            callback.onSuccess(result.toString())
+            if (isLLM) {
+                callback.onSuccess(result.toString())
+            } else {
+                var result = "The internal battery level is $internalBatteryLevel%."
+                if (boosterBatteryIsConnected) {
+                    result += " The booster battery level is $boosterBatteryLevel%."
+                }
+                callback.onSuccess(result)
+            }
         } catch (e: Exception) {
             callback.onError("Failed to get battery levels: ${e.message}")
         }

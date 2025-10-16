@@ -14,16 +14,25 @@ import kotlin.math.sqrt
 
 private const val TAG = "ToolSimilarityService"
 
+data class OfflineIntentClassificationResult(
+    val tool: ToolDefinition,
+    val similarity: Float,
+    val parameters: Map<String, String>
+)
+
 class ToolSimilarityService {
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
     private val embeddingCache = ConcurrentHashMap<String, FloatArray>()
     private val toolEmbeddingCache = ConcurrentHashMap<String, FloatArray>()
+    private var offlineCapableTools: List<ToolDefinition> = emptyList()
+    private val intentExampleEmbeddingCache = ConcurrentHashMap<String, FloatArray>()
     private val scope = CoroutineScope(Dispatchers.IO)
 
     companion object {
         private const val MAX_SEQUENCE_LENGTH = 512
         private const val SIMILARITY_THRESHOLD = 0.5f
+        private const val INTENT_THRESHOLD = 0.55f
     }
 
     suspend fun initialize(modelBytes: ByteArray) {
@@ -41,7 +50,59 @@ class ToolSimilarityService {
                 val toolText = buildToolText(tool)
                 val embedding = getEmbedding(toolText)
                 toolEmbeddingCache[tool.name] = embedding
+
+                if (!tool.examples.isNullOrEmpty()) {
+                    offlineCapableTools += tool
+                }
+
+                tool.examples?.forEachIndexed { index, example ->
+                    if (!example.isNullOrBlank()) {
+                        val key = intentExampleKey(tool.name, index)
+                        intentExampleEmbeddingCache[key] = getEmbedding(example)
+                    }
+                }
             }
+        }
+    }
+
+    suspend fun classifyIntent(
+        userQuery: String,
+    ): OfflineIntentClassificationResult? {
+        if (ortSession == null) {
+            Log.w(TAG, "Intent classification requested before model initialization")
+            return null
+        }
+
+        return withContext(scope.coroutineContext) {
+            val queryEmbedding = getEmbedding(userQuery)
+            var bestMatch: OfflineIntentClassificationResult? = null
+
+            offlineCapableTools.forEach { tool ->
+                val examples = tool.examples ?: emptyArray()
+                if (examples.isEmpty()) {
+                    return@forEach
+                }
+
+                examples.forEachIndexed { index, example ->
+                    if (example.isNullOrBlank()) {
+                        return@forEachIndexed
+                    }
+
+                    val key = intentExampleKey(tool.name, index)
+                    val exampleEmbedding = intentExampleEmbeddingCache[key]
+                    if (exampleEmbedding == null) {
+                        return@forEachIndexed
+                    }
+                    val score = cosineSimilarity(queryEmbedding, exampleEmbedding)
+
+                    if (score >= INTENT_THRESHOLD && (bestMatch == null || score > bestMatch!!.similarity)) {
+                        val parameters = extractBooleanParameters(tool, userQuery)
+                        bestMatch = OfflineIntentClassificationResult(tool, score, parameters)
+                    }
+                }
+            }
+
+            bestMatch
         }
     }
 
@@ -122,6 +183,59 @@ class ToolSimilarityService {
         }
 
         return builder.toString().trim()
+    }
+
+    private fun intentExampleKey(toolName: String, index: Int): String = "$toolName$index"
+
+    private fun extractBooleanParameters(
+        tool: ToolDefinition,
+        userQuery: String
+    ): Map<String, String> {
+        val params = tool.parameters ?: return emptyMap()
+        val normalizedQuery = userQuery.lowercase()
+
+        val results = mutableMapOf<String, String>()
+        params.forEach { parameter ->
+            if (!parameter.type.equals("boolean", ignoreCase = true)) {
+                return@forEach
+            }
+
+            val detected = detectBooleanValue(normalizedQuery)
+            if (detected != null) {
+                results[parameter.name] = if (detected) "true" else "false"
+            }
+        }
+
+        return results
+    }
+
+    private fun detectBooleanValue(normalizedQuery: String): Boolean? {
+        val negativeKeywords = listOf(
+            "turn off", "disable", "stop", "end", "shut off", "power off", "deactivate", "mute"
+        )
+        val positiveKeywords = listOf(
+            "turn on", "enable", "start", "begin", "power on", "activate", "unmute"
+        )
+
+        if (containsAny(normalizedQuery, negativeKeywords)) {
+            return false
+        }
+        if (containsAny(normalizedQuery, positiveKeywords)) {
+            return true
+        }
+
+        return null
+    }
+
+    private fun containsAny(text: String, phrases: List<String>): Boolean {
+        return phrases.any { phrase ->
+            val trimmed = phrase.trim()
+            if (trimmed.contains(" ")) {
+                text.contains(trimmed, ignoreCase = true)
+            } else {
+                text.split(Regex("\\W+")).any { it.equals(trimmed, ignoreCase = true) }
+            }
+        }
     }
 
     private fun tokenizeText(text: String): IntArray {

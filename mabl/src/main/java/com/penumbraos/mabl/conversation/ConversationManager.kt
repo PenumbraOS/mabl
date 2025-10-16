@@ -86,6 +86,11 @@ class ConversationManager(
             return
         }
 
+        val offlineHandled = tryHandleOfflineIntent(userMessage, callback)
+        if (offlineHandled) {
+            return
+        }
+
         // Filter tools based on user query before sending to LLM
         val filteredTools = runBlocking {
             try {
@@ -121,6 +126,47 @@ class ConversationManager(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to generate response: $e")
             callback.onError("Failed to generate response: $e")
+        }
+    }
+
+    private suspend fun tryHandleOfflineIntent(
+        userMessage: String,
+        callback: ConversationCallback
+    ): Boolean {
+        return try {
+            val match = allControllers.toolOrchestrator.classifyOfflineIntent(userMessage)
+                ?: return false
+
+            Log.w(TAG, "Offline intent matched: ${match.tool.name}")
+
+            val parametersJson = if (match.parameters.isEmpty()) {
+                ""
+            } else {
+                val json = org.json.JSONObject()
+                match.parameters.forEach { (key, value) ->
+                    json.put(key, value)
+                }
+                json.toString()
+            }
+
+            allControllers.toolOrchestrator.executeTool(ToolCall().apply {
+                id = match.tool.name
+                name = match.tool.name
+                parameters = parametersJson
+            }, object : IToolCallback.Stub() {
+                override fun onSuccess(result: String?) {
+                    callback.onCompleteResponse(result ?: "")
+                }
+
+                override fun onError(error: String?) {
+                    callback.onError(error ?: "Unknown error occurred")
+                }
+            })
+
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Offline intent execution failed, falling back to LLM: ${e.message}")
+            false
         }
     }
 

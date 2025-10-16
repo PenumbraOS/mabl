@@ -254,6 +254,7 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                                             id = toolCall.id!!.id
                                             name = toolCall.function!!.name
                                             parameters = toolCall.function!!.arguments
+                                            isLLM = true
                                         }
                                         toolCalls.add(convertedToolCall)
                                     }

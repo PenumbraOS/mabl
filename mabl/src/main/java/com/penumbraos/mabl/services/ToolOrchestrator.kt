@@ -109,6 +109,10 @@ class ToolOrchestrator(
         Log.d(TAG, "Available tools: ${allTools.map { it.name }}")
     }
 
+    suspend fun classifyOfflineIntent(userQuery: String): OfflineIntentClassificationResult? {
+        return toolSimilarityService.classifyIntent(userQuery)
+    }
+
     suspend fun getFilteredToolDefinitions(
         userQuery: String,
         maxTools: Int = 6
