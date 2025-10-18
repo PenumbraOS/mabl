@@ -139,7 +139,10 @@ class ConversationManager(
             val match = allControllers.toolOrchestrator.classifyOfflineIntent(userMessage)
                 ?: return false
 
-            Log.w(TAG, "Offline intent matched: ${match.tool.name}")
+            Log.w(
+                TAG,
+                "Offline intent matched: ${match.tool.name} with similarity: ${match.similarity}"
+            )
 
             val parametersJson = if (match.parameters.isEmpty()) {
                 ""
@@ -157,6 +160,7 @@ class ConversationManager(
                 parameters = parametersJson
             }, object : IToolCallback.Stub() {
                 override fun onSuccess(result: String?) {
+                    persistAssistantMessage(result ?: "", emptyArray())
                     callback.onCompleteResponse(result ?: "")
                 }
 
@@ -186,15 +190,6 @@ class ConversationManager(
         if (response.toolCalls.isNotEmpty()) {
             Log.d(TAG, "LLM requested ${response.toolCalls.size} tool calls")
 
-            // Add assistant message with tool calls to history
-            val message = BinderConversationMessage().apply {
-                type = "assistant"
-                content = responseText
-                toolCalls = response.toolCalls
-                toolCallId = null
-            }
-            conversationHistory.add(message)
-
             // Persist assistant message with tool calls to database
             val serializableToolCalls = response.toolCalls.map { toolCall ->
                 SerializableToolCall(
@@ -204,7 +199,8 @@ class ConversationManager(
                 )
             }.toTypedArray()
             val toolCallsJson = json.encodeToString(serializableToolCalls)
-            persistMessageSync("assistant", responseText, toolCallsJson)
+            // Add assistant message with tool calls to history
+            persistAssistantMessage(responseText, response.toolCalls, toolCallsJson)
 
             // Execute tool calls
             val toolCallsToExecute = response.toolCalls.size
@@ -243,19 +239,27 @@ class ConversationManager(
             }
         } else {
             // No tool calls, this is the final response
-            val message = BinderConversationMessage().apply {
-                type = "assistant"
-                content = responseText
-                toolCalls = emptyArray()
-                toolCallId = null
-            }
-            conversationHistory.add(message)
-
-            // Persist assistant message to database
-            persistMessageSync("assistant", responseText)
+            persistAssistantMessage(responseText, emptyArray())
 
             callback.onCompleteResponse(responseText)
         }
+    }
+
+    private fun persistAssistantMessage(
+        responseText: String,
+        newTools: Array<ToolCall>,
+        toolCallsJson: String? = null
+    ) {
+        val message = BinderConversationMessage().apply {
+            type = "assistant"
+            content = responseText
+            toolCalls = newTools
+            toolCallId = null
+        }
+        conversationHistory.add(message)
+
+        // Persist assistant message to database
+        persistMessageSync("assistant", responseText, toolCallsJson)
     }
 
     private fun continueConversationWithToolResults(
