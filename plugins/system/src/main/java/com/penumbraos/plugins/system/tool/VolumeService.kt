@@ -21,7 +21,7 @@ class VolumeService : ToolService("VolumeService") {
         when (call.name) {
             GET_VOLUME -> {
                 val volume = getVolume()
-                callback.onSuccess(volume.toString())
+                callback.onSuccess("Device volume is $volume%")
             }
 
             SET_VOLUME -> {
@@ -37,22 +37,26 @@ class VolumeService : ToolService("VolumeService") {
 
             MUTE_VOLUME -> {
                 setMute(true)
+                callback.onSuccess("Volume muted")
             }
 
             UNMUTE_VOLUME -> {
                 setMute(false)
+                callback.onSuccess("Volume unmuted")
             }
 
             INCREASE_VOLUME -> {
                 val currentVolume = getVolume()
                 val newVolume = (currentVolume + 10).coerceAtMost(100)
                 setVolume(newVolume)
+                callback.onSuccess("Volume increased to $newVolume%")
             }
 
             DECREASE_VOLUME -> {
                 val currentVolume = getVolume()
                 val newVolume = (currentVolume - 10).coerceAtLeast(0)
                 setVolume(newVolume)
+                callback.onSuccess("Volume decreased to $newVolume%")
             }
         }
     }
@@ -61,6 +65,11 @@ class VolumeService : ToolService("VolumeService") {
         return arrayOf(ToolDefinition().apply {
             name = GET_VOLUME
             description = "Get the current volume level"
+            examples = arrayOf(
+                "volume",
+                "what's the volume",
+                "current volume level"
+            )
             parameters = emptyArray()
         }, ToolDefinition().apply {
             name = SET_VOLUME
@@ -72,28 +81,52 @@ class VolumeService : ToolService("VolumeService") {
                 required = true
                 enumValues = emptyArray()
             })
+            examples = emptyArray()
         }, ToolDefinition().apply {
             name = MUTE_VOLUME
             description = "Mute the volume"
+            examples = arrayOf(
+                "mute the volume",
+                "mute the device",
+                "silence audio",
+                "turn sound off"
+            )
             parameters = emptyArray()
         }, ToolDefinition().apply {
             name = UNMUTE_VOLUME
             description = "Unmute the volume"
+            examples = arrayOf(
+                "unmute the volume",
+                "unmute the device",
+                "turn sound on"
+            )
             parameters = emptyArray()
         }, ToolDefinition().apply {
             name = INCREASE_VOLUME
             description = "Increase the volume by 10%"
+            examples = arrayOf(
+                "increase the volume",
+                "turn up the volume",
+                "turn it up"
+            )
             parameters = emptyArray()
         }, ToolDefinition().apply {
             name = DECREASE_VOLUME
             description = "Decrease the volume by 10%"
+            examples = arrayOf(
+                "decrease the volume",
+                "turn down the volume",
+                "turn it down"
+            )
             parameters = emptyArray()
         })
     }
 
     fun getVolume(): Int {
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        return audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        return volume * 100 / maxVolume
     }
 
     fun setVolume(volume: Int) {

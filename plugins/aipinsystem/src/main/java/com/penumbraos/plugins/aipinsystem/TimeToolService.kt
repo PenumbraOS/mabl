@@ -15,6 +15,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Timer
 import java.util.TimerTask
 import java.util.concurrent.ConcurrentHashMap
@@ -62,7 +63,7 @@ class TimeToolService : ToolService("TimeToolService") {
 
     override fun executeTool(call: ToolCall, params: JSONObject?, callback: IToolCallback) {
         when (call.name) {
-            GET_CURRENT_TIME_TOOL -> getCurrentTime(callback)
+            GET_CURRENT_TIME_TOOL -> getCurrentTime(callback, call.isLLM)
             CREATE_TIMER_TOOL -> createTimer(params, callback)
             LIST_TIMERS_TOOL -> listTimers(callback)
             CANCEL_TIMER_TOOL -> cancelTimer(params, callback)
@@ -78,6 +79,11 @@ class TimeToolService : ToolService("TimeToolService") {
             ToolDefinition().apply {
                 name = GET_CURRENT_TIME_TOOL
                 description = "Get the current date and time"
+                examples = arrayOf(
+                    "what time is it",
+                    "current time",
+                    "tell me the time"
+                )
                 parameters = emptyArray()
             },
             ToolDefinition().apply {
@@ -150,19 +156,26 @@ class TimeToolService : ToolService("TimeToolService") {
         )
     }
 
-    private fun getCurrentTime(callback: IToolCallback) {
+    private fun getCurrentTime(callback: IToolCallback, isLLM: Boolean) {
         val now = ZonedDateTime.now()
-        val isoFormat = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-        val timezone = now.zone.toString()
 
-        val result = """
+        if (isLLM) {
+            val isoFormat = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+            val timezone = now.zone.toString()
+
+            val result = """
             {
                 "datetime_iso": "$isoFormat",
                 "timezone": "$timezone"
             }
         """.trimIndent()
 
-        callback.onSuccess(result)
+            callback.onSuccess(result)
+        } else {
+            val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+
+            callback.onSuccess("It is ${now.format(time)}")
+        }
     }
 
     private fun createTimer(params: JSONObject?, callback: IToolCallback) {
