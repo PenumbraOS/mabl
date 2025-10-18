@@ -58,19 +58,15 @@ class StaticQueryToolService(
         return arrayOf(
             ToolDefinition().apply {
                 name = NEW_CONVERSATION
-                description = "new conversation"
                 examples = arrayOf(
-                    "start a new conversation",
-                    "new chat",
-                    "reset the conversation"
+                    "new conversation",
+                    "new chat"
                 )
             },
             ToolDefinition().apply {
                 name = REBOOT_NOW
-                description = "reboot now,emergency reboot"
                 examples = arrayOf(
                     "reboot now",
-                    "restart the pin",
                     "emergency reboot"
                 )
             }

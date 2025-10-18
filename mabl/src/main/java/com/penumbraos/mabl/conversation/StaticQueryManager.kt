@@ -56,8 +56,7 @@ class StaticQueryManager(
         val tools = toolService.getToolDefinitions()
         val map = mutableMapOf<String, ToolDefinition>()
         for (tool in tools) {
-            val staticQueries = tool.description.split(",")
-            for (staticQuery in staticQueries) {
+            for (staticQuery in tool.examples ?: emptyArray()) {
                 map[staticQuery] = tool
             }
         }
