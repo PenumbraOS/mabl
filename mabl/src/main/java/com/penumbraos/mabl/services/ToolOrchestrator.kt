@@ -9,7 +9,6 @@ import com.penumbraos.mabl.sdk.IToolService
 import com.penumbraos.mabl.sdk.PluginType
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
-import java.io.ByteArrayOutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "ToolOrchestrator"
@@ -60,9 +59,7 @@ class ToolOrchestrator(
         allConnected.await()
 
         try {
-            val outputStream = ByteArrayOutputStream()
-            context.assets.open("minilm-l6-v2-qint8-arm64.onnx").copyTo(outputStream)
-            toolSimilarityService.initialize(outputStream.toByteArray())
+            toolSimilarityService.initialize(context)
 
             // Precalculate embeddings for all available tools
             buildToolDefinitionsMap()
@@ -73,7 +70,7 @@ class ToolOrchestrator(
                 "Tool similarity service initialized successfully with ${allTools.size} tool embeddings precalculated"
             )
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to initialize similarity service: ${e.message}")
+            Log.e(TAG, "Failed to initialize similarity service: $e")
         }
     }
 

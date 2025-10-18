@@ -1,14 +1,13 @@
 package com.penumbraos.mabl.services
 
-import ai.onnxruntime.OnnxTensor
-import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtSession
+import android.content.Context
 import android.util.Log
 import com.penumbraos.mabl.sdk.ToolDefinition
+import com.penumbraos.mabl.util.SentenceEmbedding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.nio.LongBuffer
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.sqrt
 
@@ -21,60 +20,75 @@ data class OfflineIntentClassificationResult(
 )
 
 class ToolSimilarityService {
-    private var ortEnvironment: OrtEnvironment? = null
-    private var ortSession: OrtSession? = null
-    private val embeddingCache = ConcurrentHashMap<String, FloatArray>()
+    private val sentenceEmbedding = SentenceEmbedding()
     private val toolEmbeddingCache = ConcurrentHashMap<String, FloatArray>()
-    private var offlineCapableTools: List<ToolDefinition> = emptyList()
     private val intentExampleEmbeddingCache = ConcurrentHashMap<String, FloatArray>()
+    private var offlineCapableTools: List<ToolDefinition> = emptyList()
     private val scope = CoroutineScope(Dispatchers.IO)
 
     companion object {
-        private const val MAX_SEQUENCE_LENGTH = 512
         private const val SIMILARITY_THRESHOLD = 0.5f
         private const val INTENT_THRESHOLD = 0.55f
+//        private const val TOOL_CONFIRMATION_MARGIN = 0.05f
     }
 
-    suspend fun initialize(modelBytes: ByteArray) {
+    suspend fun initialize(context: Context) {
         withContext(scope.coroutineContext) {
-            ortEnvironment = OrtEnvironment.getEnvironment()
-            ortSession = ortEnvironment?.createSession(modelBytes)
+            val modelBytes = ByteArrayOutputStream().use { outputStream ->
+                context.assets.open("minilm-l6-v2-qint8-arm64.onnx").copyTo(outputStream)
+                outputStream.toByteArray()
+            }
+
+            val tokenizerBytes = ByteArrayOutputStream().use { outputStream ->
+                context.assets.open("minilm-l6-v2-tokenizer.json").copyTo(outputStream)
+                outputStream.toByteArray()
+            }
+
+            try {
+                sentenceEmbedding.init(
+                    modelBytes = modelBytes,
+                    tokenizerBytes = tokenizerBytes,
+                    useTokenTypeIds = true,
+                    outputTensorName = "last_hidden_state",
+                    normalizeEmbeddings = true
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to initialize tokenizer: ${e.message}")
+                null
+            }
         }
     }
 
     suspend fun precalculateToolEmbeddings(tools: List<ToolDefinition>) {
-        if (ortSession == null) return
-
         withContext(scope.coroutineContext) {
+            val offlineCandidates = mutableListOf<ToolDefinition>()
+            toolEmbeddingCache.clear()
+            intentExampleEmbeddingCache.clear()
+
             tools.forEach { tool ->
                 val toolText = buildToolText(tool)
-                val embedding = getEmbedding(toolText)
-                toolEmbeddingCache[tool.name] = embedding
+                toolEmbeddingCache[tool.name] = sentenceEmbedding.encode(toolText)
 
                 if (!tool.examples.isNullOrEmpty()) {
-                    offlineCapableTools += tool
+                    offlineCandidates += tool
                 }
 
                 tool.examples?.forEachIndexed { index, example ->
                     if (!example.isNullOrBlank()) {
                         val key = intentExampleKey(tool.name, index)
-                        intentExampleEmbeddingCache[key] = getEmbedding(example)
+                        intentExampleEmbeddingCache[key] = sentenceEmbedding.encode(example)
                     }
                 }
             }
+            offlineCapableTools = offlineCandidates
         }
     }
 
     suspend fun classifyIntent(
         userQuery: String,
     ): OfflineIntentClassificationResult? {
-        if (ortSession == null) {
-            Log.w(TAG, "Intent classification requested before model initialization")
-            return null
-        }
-
         return withContext(scope.coroutineContext) {
-            val queryEmbedding = getEmbedding(userQuery)
+            val queryEmbedding = sentenceEmbedding.encode(userQuery)
             var bestMatch: OfflineIntentClassificationResult? = null
 
             offlineCapableTools.forEach { tool ->
@@ -90,12 +104,28 @@ class ToolSimilarityService {
 
                     val key = intentExampleKey(tool.name, index)
                     val exampleEmbedding = intentExampleEmbeddingCache[key]
-                    if (exampleEmbedding == null) {
+                        ?: return@forEachIndexed
+
+                    val score = cosineSimilarity(queryEmbedding, exampleEmbedding)
+                    if (score < INTENT_THRESHOLD) {
                         return@forEachIndexed
                     }
-                    val score = cosineSimilarity(queryEmbedding, exampleEmbedding)
 
-                    if (score >= INTENT_THRESHOLD && (bestMatch == null || score > bestMatch!!.similarity)) {
+//                    val toolEmbedding = toolEmbeddingCache[tool.name]
+//                        ?: sentenceEmbedding.encode(buildToolText(tool)).also {
+//                            toolEmbeddingCache[tool.name] = it
+//                        }
+//                    val toolScore = cosineSimilarity(queryEmbedding, toolEmbedding)
+//                    Log.e(
+//                        "ToolSimilarityService",
+//                        "Intent classification result: ${tool.name} $score $toolScore"
+//                    )
+//
+//                    if (toolScore < INTENT_THRESHOLD + TOOL_CONFIRMATION_MARGIN) {
+//                        return@forEachIndexed
+//                    }
+
+                    if (bestMatch == null || score > bestMatch!!.similarity) {
                         val parameters = extractBooleanParameters(tool, userQuery)
                         bestMatch = OfflineIntentClassificationResult(tool, score, parameters)
                     }
@@ -111,18 +141,14 @@ class ToolSimilarityService {
         userQuery: String,
         maxTools: Int
     ): List<ToolDefinition> {
-        if (ortSession == null) {
-            throw IllegalStateException("Tool similarity service not initialized")
-        }
-
         return withContext(scope.coroutineContext) {
-            val queryEmbedding = getEmbedding(userQuery)
+            val queryEmbedding = sentenceEmbedding.encode(userQuery)
 
             val toolScores = tools.map { tool ->
                 val toolEmbedding = toolEmbeddingCache[tool.name] ?: run {
                     // Fallback: calculate embedding if not cached
                     val toolText = buildToolText(tool)
-                    getEmbedding(toolText)
+                    sentenceEmbedding.encode(toolText)
                 }
                 val similarity = cosineSimilarity(queryEmbedding, toolEmbedding)
 
@@ -138,36 +164,6 @@ class ToolSimilarityService {
             Log.d(TAG, "Filtered tools: ${scores.map { "${it.first.name}: ${it.second}" }}")
 
             scores.map { it.first }
-        }
-    }
-
-    private suspend fun getEmbedding(text: String): FloatArray {
-        val cacheKey = text.hashCode().toString()
-        embeddingCache[cacheKey]?.let { return it }
-
-        return withContext(scope.coroutineContext) {
-            val tokenIds = tokenizeText(text)
-            val inputIdsTensor = createInputTensor(tokenIds)
-            val tokenTypeIdsTensor = createTokenTypeIdsTensor(tokenIds.size)
-            val attentionMaskTensor = createAttentionMaskTensor(tokenIds.size)
-
-            val inputs = mapOf(
-                "input_ids" to inputIdsTensor,
-                "token_type_ids" to tokenTypeIdsTensor,
-                "attention_mask" to attentionMaskTensor
-            )
-            val outputs = ortSession?.run(inputs)
-
-            val embedding = outputs?.get(0)?.value as Array<*>
-            val floatEmbedding = (embedding[0] as Array<FloatArray>)[0]
-
-            inputIdsTensor.close()
-            tokenTypeIdsTensor.close()
-            attentionMaskTensor.close()
-            outputs.close()
-
-            embeddingCache[cacheKey] = floatEmbedding
-            floatEmbedding
         }
     }
 
@@ -238,57 +234,6 @@ class ToolSimilarityService {
         }
     }
 
-    private fun tokenizeText(text: String): IntArray {
-        val words = text.lowercase().split(Regex("\\W+"))
-        val tokens = mutableListOf<Int>()
-
-        words.forEach { word ->
-            if (word.isNotEmpty()) {
-                tokens.add(word.hashCode() % 30000)
-            }
-        }
-
-        return tokens.take(MAX_SEQUENCE_LENGTH).toIntArray()
-    }
-
-    private fun createInputTensor(tokenIds: IntArray): OnnxTensor {
-        val shape = longArrayOf(1, tokenIds.size.toLong())
-        val buffer = LongBuffer.allocate(tokenIds.size)
-
-        tokenIds.forEach { id ->
-            buffer.put(id.toLong())
-        }
-        buffer.flip()
-
-        return OnnxTensor.createTensor(ortEnvironment, buffer, shape)
-    }
-
-    private fun createTokenTypeIdsTensor(sequenceLength: Int): OnnxTensor {
-        val shape = longArrayOf(1, sequenceLength.toLong())
-        val buffer = LongBuffer.allocate(sequenceLength)
-
-        // All tokens are type 0 (single sentence)
-        repeat(sequenceLength) {
-            buffer.put(0L)
-        }
-        buffer.flip()
-
-        return OnnxTensor.createTensor(ortEnvironment, buffer, shape)
-    }
-
-    private fun createAttentionMaskTensor(sequenceLength: Int): OnnxTensor {
-        val shape = longArrayOf(1, sequenceLength.toLong())
-        val buffer = LongBuffer.allocate(sequenceLength)
-
-        // All tokens get attention (no padding in our case)
-        repeat(sequenceLength) {
-            buffer.put(1L)
-        }
-        buffer.flip()
-
-        return OnnxTensor.createTensor(ortEnvironment, buffer, shape)
-    }
-
     private fun cosineSimilarity(a: FloatArray, b: FloatArray): Float {
         if (a.size != b.size) return 0f
 
@@ -307,7 +252,6 @@ class ToolSimilarityService {
     }
 
     fun close() {
-        ortSession?.close()
-        ortEnvironment?.close()
+        sentenceEmbedding.close()
     }
 }

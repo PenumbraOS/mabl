@@ -21,6 +21,7 @@ ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
 onnx-runtime = "1.20.0"
+sentence-embeddings = "v6"
 room = "2.7.2"
 jsoup = "1.17.2"
 # The first number needs to match the Kotlin version
@@ -64,6 +65,7 @@ ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serializatio
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 onnx-runtime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnx-runtime" }
+sentence-embeddings = { group = "io.gitlab.shubham0204", name = "sentence-embeddings", version.ref = "sentence-embeddings" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }

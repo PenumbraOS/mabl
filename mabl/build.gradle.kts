@@ -86,7 +86,9 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
 
     implementation(libs.kotlinx.serialization.json)
+
     implementation(libs.onnx.runtime.android)
+    implementation(libs.sentence.embeddings)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
