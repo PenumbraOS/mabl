@@ -91,6 +91,8 @@ class ConversationManager(
             return
         }
 
+        callback.onBeginRemoteRequest()
+
         // Filter tools based on user query before sending to LLM
         val filteredTools = runBlocking {
             try {
@@ -375,6 +377,7 @@ class ConversationManager(
     }
 
     interface ConversationCallback {
+        fun onBeginRemoteRequest()
         fun onPartialResponse(newToken: String)
         fun onCompleteResponse(finalResponse: String)
         fun onError(error: String)

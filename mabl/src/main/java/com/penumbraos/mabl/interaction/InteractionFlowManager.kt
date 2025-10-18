@@ -131,12 +131,14 @@ class InteractionFlowManager
                 imageInput = takeGroundingImage()
             }
 
-            allControllers.soundEffectManager.playWaitingEffect()
-
             conversationManager!!.startOrContinueConversationWithMessage(
                 userInput,
                 imageInput,
                 object : ConversationManager.ConversationCallback {
+                    override fun onBeginRemoteRequest() {
+                        allControllers.soundEffectManager.playWaitingEffect()
+                    }
+
                     override fun onPartialResponse(newToken: String) {
                         Log.d(TAG, "LLM partial response: $newToken")
                         contentCallback?.onPartialResponse(newToken)
