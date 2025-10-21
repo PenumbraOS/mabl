@@ -21,8 +21,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.open.pin.ui.PinTheme
 import com.open.pin.ui.components.text.PinText
@@ -65,6 +67,15 @@ fun PlatformUI(uiComponents: UIComponents) {
             return actualViewModel.navViewModel as T
         }
     })
+
+    val processLifecycle = remember { ProcessLifecycleOwner.get().lifecycle }
+
+    LifecycleStartEffect(processLifecycle) {
+        actualViewModel.appIsForeground = true
+        onStopOrDispose {
+            actualViewModel.appIsForeground = false
+        }
+    }
 
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current
 

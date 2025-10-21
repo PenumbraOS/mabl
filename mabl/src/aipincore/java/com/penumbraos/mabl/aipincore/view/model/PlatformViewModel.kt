@@ -22,6 +22,8 @@ class PlatformViewModel(
 ) : ViewModel() {
     val navViewModel = NavViewModel()
 
+    var appIsForeground: Boolean = false
+
     private val _backGestureChannel = Channel<Unit>(Channel.RENDEZVOUS)
     val backGestureEvent = _backGestureChannel.receiveAsFlow()
 
@@ -59,11 +61,19 @@ class PlatformViewModel(
     }
 
     fun backGesture() {
+        if (!appIsForeground) {
+            return
+        }
+        
         Log.d("PlatformViewModel", "Back gesture received")
         _backGestureChannel.trySend(Unit)
     }
 
     fun toggleMenuVisible() {
+        if (!appIsForeground) {
+            return
+        }
+
         if (!closeMenu()) {
             Log.d("PlatformViewModel", "Showing menu")
             navViewModel.backStack.add(MenuNav)
