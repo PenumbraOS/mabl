@@ -37,7 +37,7 @@ import com.penumbraos.mabl.discovery.PluginManager
 import com.penumbraos.mabl.discovery.PluginService
 
 @Composable
-fun PlatformUI(uiComponents: UIComponents) {
+fun PlatformUI(uiComponents: UIComponents?) {
     val conversationRenderer = uiComponents.conversationRenderer as ConversationRenderer
 
     // when (navigationController.currentScreen.value) {

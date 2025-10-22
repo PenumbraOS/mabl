@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,67 +42,14 @@ import com.penumbraos.mabl.aipincore.view.model.ConversationDisplayNav
 import com.penumbraos.mabl.aipincore.view.model.NavViewModel
 import com.penumbraos.mabl.aipincore.view.model.PlatformViewModel
 import com.penumbraos.mabl.aipincore.view.nav.Navigation
-import com.penumbraos.mabl.data.AppDatabase
 import com.penumbraos.mabl.data.types.ConversationMessage
 import com.penumbraos.mabl.ui.UIComponents
 
 @Composable
-fun PlatformUI(uiComponents: UIComponents) {
-    val context = LocalContext.current
-    val database = remember { AppDatabase.getDatabase(context) }
+fun PlatformUI(uiComponents: UIComponents?) {
     val snapCoordinator = remember { mutableStateOf(SnapCoordinator()) }
-    val actualViewModel = uiComponents.platformCapabilities.getViewModel() as PlatformViewModel
 
     var displayDebugView = remember { mutableStateOf(false) }
-
-    // Push view model into owner
-    viewModel<PlatformViewModel>(factory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return actualViewModel as T
-        }
-    })
-    viewModel<NavViewModel>(factory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return actualViewModel.navViewModel as T
-        }
-    })
-
-    val processLifecycle = remember { ProcessLifecycleOwner.get().lifecycle }
-
-    LifecycleStartEffect(processLifecycle) {
-        actualViewModel.appIsForeground = true
-        onStopOrDispose {
-            actualViewModel.appIsForeground = false
-        }
-    }
-
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current
-
-    LaunchedEffect(Unit) {
-        actualViewModel.backGestureEvent.collect {
-            if (!actualViewModel.navViewModel.isHomeScreen.value) {
-                backDispatcher?.onBackPressedDispatcher?.onBackPressed()
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        actualViewModel.openCurrentConversationEvent.collect {
-            val currentConversation =
-                actualViewModel.conversationRepository.getLastActiveConversation()
-            if (currentConversation != null) {
-                actualViewModel.navViewModel.pushView(ConversationDisplayNav(currentConversation.id))
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        actualViewModel.debugChannel.collect {
-            displayDebugView.value = it
-        }
-    }
 
     PinTheme {
         ProvideSnapCoordinator(coordinator = snapCoordinator.value) {
@@ -111,7 +59,18 @@ fun PlatformUI(uiComponents: UIComponents) {
                     .background(color = PinTheme.colors.background)
             ) {
                 // For some very strange reason things on the bottom are higher z-index
-                Navigation()
+                if (uiComponents != null) {
+                    Content(uiComponents, displayDebugView)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(color = PinTheme.colors.background),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
                 if (displayDebugView.value) {
                     VoronoiVisualizer(
                         alpha = 0.4f
@@ -124,6 +83,62 @@ fun PlatformUI(uiComponents: UIComponents) {
             }
         }
     }
+}
+
+@Composable
+fun Content(uiComponents: UIComponents, displayDebugView: MutableState<Boolean>) {
+    val platformViewModel = uiComponents.platformCapabilities.getViewModel() as PlatformViewModel
+
+    // Push view model into owner
+    viewModel<PlatformViewModel>(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return platformViewModel as T
+        }
+    })
+    viewModel<NavViewModel>(factory = object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return platformViewModel.navViewModel as T
+        }
+    })
+
+    val processLifecycle = remember { ProcessLifecycleOwner.get().lifecycle }
+
+    LifecycleStartEffect(processLifecycle) {
+        platformViewModel.appIsForeground = true
+        onStopOrDispose {
+            platformViewModel.appIsForeground = false
+        }
+    }
+
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current
+
+    LaunchedEffect(Unit) {
+        platformViewModel.backGestureEvent.collect {
+            if (!platformViewModel.navViewModel.isHomeScreen.value) {
+                backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        platformViewModel.openCurrentConversationEvent.collect {
+            val currentConversation =
+                platformViewModel.conversationRepository.getLastActiveConversation()
+            if (currentConversation != null) {
+                platformViewModel.navViewModel.pushView(ConversationDisplayNav(currentConversation.id))
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        platformViewModel.debugChannel.collect {
+            displayDebugView.value = it
+        }
+    }
+
+    Navigation()
 }
 
 @Composable

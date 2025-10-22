@@ -20,7 +20,7 @@ import com.penumbraos.mabl.simulation.SimulatedPinDisplay
 import com.penumbraos.mabl.simulation.SimulatedTouchpad
 
 @Composable
-fun PlatformUI(uiComponents: UIComponents) {
+fun PlatformUI(uiComponents: UIComponents?) {
     // AI Pin Simulator: Three-panel layout for development and testing
     Row(
         modifier = Modifier.fillMaxSize()
