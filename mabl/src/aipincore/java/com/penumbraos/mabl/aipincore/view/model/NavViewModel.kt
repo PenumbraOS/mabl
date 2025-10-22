@@ -14,6 +14,10 @@ data object DummyNav
 class NavViewModel() : ViewModel() {
     val backStack = mutableStateListOf<Any>(HomeNav)
 
+    val isHomeScreen = derivedStateOf {
+        backStack.lastOrNull() == HomeNav
+    }
+
     val isMenuOpen = derivedStateOf {
         backStack.lastOrNull() == MenuNav
     }

@@ -1,5 +1,6 @@
 import android.content.ComponentName
 import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -11,6 +12,8 @@ fun Settings(navViewModel: NavViewModel = viewModel<NavViewModel>()) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        navViewModel.popView()
+
         val intent = Intent().apply {
             component = ComponentName(
                 "humane.experience.settings",
@@ -18,7 +21,11 @@ fun Settings(navViewModel: NavViewModel = viewModel<NavViewModel>()) {
             )
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
-        context.startActivity(intent)
-        navViewModel.popView()
+
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("Settings", "Failed to start settings", e)
+        }
     }
 }

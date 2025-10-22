@@ -81,7 +81,9 @@ fun PlatformUI(uiComponents: UIComponents) {
 
     LaunchedEffect(Unit) {
         actualViewModel.backGestureEvent.collect {
-            backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+            if (!actualViewModel.navViewModel.isHomeScreen.value) {
+                backDispatcher?.onBackPressedDispatcher?.onBackPressed()
+            }
         }
     }
 
