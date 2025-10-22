@@ -1,6 +1,9 @@
 package com.penumbraos.mabl.conversation
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import com.penumbraos.mabl.sdk.IToolCallback
 import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
@@ -12,11 +15,12 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 private const val NEW_CONVERSATION = "new_conversation"
+private const val OPEN_SETTINGS = "open_settings"
 private const val REBOOT_NOW = "reboot_now"
 
 class StaticQueryToolService(
     private val allControllers: AllControllers,
-    context: Context,
+    private val context: Context,
     val coroutineScope: CoroutineScope
 ) : ToolService("StaticQueryToolService") {
     // TODO: This should work on non-Pin
@@ -33,6 +37,27 @@ class StaticQueryToolService(
                     allControllers.conversationManager.startNewConversation()
 
                     callback.onSuccess("Created new conversation")
+                }
+            }
+
+            OPEN_SETTINGS -> {
+                coroutineScope.launch {
+                    // TODO: This should work on non-Pin
+                    val intent = Intent().apply {
+                        component = ComponentName(
+                            "humane.experience.settings",
+                            "humane.experience.settings.SettingsExperience"
+                        )
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    }
+
+                    try {
+                        context.startActivity(intent)
+                        callback.onSuccess("Opened settings")
+                    } catch (e: Exception) {
+                        Log.e("Settings", "Failed to start settings", e)
+                        callback.onSuccess("Failed to open settings")
+                    }
                 }
             }
 
@@ -61,6 +86,15 @@ class StaticQueryToolService(
                 examples = arrayOf(
                     "new conversation",
                     "new chat"
+                )
+            },
+            ToolDefinition().apply {
+                name = OPEN_SETTINGS
+                examples = arrayOf(
+                    "open settings",
+                    "open system settings",
+                    "open human settings",
+                    "launch settings"
                 )
             },
             ToolDefinition().apply {
