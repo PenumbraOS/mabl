@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -166,12 +167,10 @@ fun ConversationList(
             showScrollButtons = !menuOpen,
             autoHideButtons = true
         ) {
-            Column {
-                for (message in messages) {
-                    MessageItem(
-                        message = message,
-                    )
-                }
+            items(messages, key = { it.id }) { message ->
+                MessageItem(
+                    message = message,
+                )
             }
         }
     }
