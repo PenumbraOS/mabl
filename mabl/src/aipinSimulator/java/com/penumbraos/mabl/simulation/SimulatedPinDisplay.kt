@@ -25,7 +25,7 @@ import com.penumbraos.mabl.ui.UIComponents
 @Composable
 fun SimulatedPinDisplay(
     modifier: Modifier = Modifier,
-    uiComponents: UIComponents
+    uiComponents: UIComponents?
 ) {
     val density = LocalDensity.current
 
