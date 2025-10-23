@@ -15,7 +15,7 @@ import com.penumbraos.mabl.data.types.ConversationMessage
 
 @Database(
     entities = [Conversation::class, ConversationMessage::class, ConversationImage::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -64,6 +64,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_messages_conversationId` ON `conversation_messages` (`conversationId`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_messages_conversationId_type_timestamp` ON `conversation_messages` (`conversationId`, `type`, `timestamp`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_images_messageId` ON `conversation_images` (`messageId`)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -71,7 +79,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "app_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

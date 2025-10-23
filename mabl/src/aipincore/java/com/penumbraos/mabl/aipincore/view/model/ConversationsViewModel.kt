@@ -3,23 +3,20 @@ package com.penumbraos.mabl.aipincore.view.model
 import androidx.lifecycle.ViewModel
 import com.penumbraos.mabl.data.types.Conversation
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 class ConversationsViewModel(private val viewModel: PlatformViewModel) : ViewModel() {
-    val conversationsWithInjectedTitle: Flow<List<Conversation>> = flow {
-        viewModel.database.conversationDao().getAllConversations().collect {
-            emit(it.map {
-                val firstMessage = viewModel.database.conversationDao().getFirstUserMessage(it.id)
-                Conversation(
-                    id = it.id,
-                    title = firstMessage ?: it.title,
-                    createdAt = it.createdAt,
-                    lastActivity = it.lastActivity,
-                    isActive = it.isActive
-                )
-            })
-        }
-    }
+    val conversationsWithInjectedTitle: Flow<List<Conversation>> =
+        viewModel.database.conversationDao()
+            .getConversationsWithFirstUserMessage()
+            .map { conversations ->
+                conversations.map { conversationWithFirstMessage ->
+                    val conversation = conversationWithFirstMessage.conversation
+                    conversation.copy(
+                        title = conversationWithFirstMessage.firstUserMessage ?: conversation.title
+                    )
+                }
+            }
 
     fun openConversation(id: String) {
         viewModel.navViewModel.pushView(ConversationDisplayNav(id))

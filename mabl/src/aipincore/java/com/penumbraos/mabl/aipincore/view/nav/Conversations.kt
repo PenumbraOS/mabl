@@ -94,10 +94,12 @@ fun AllConversationsList(
             showScrollButtons = !menuOpen,
             autoHideButtons = true
         ) {
-            for (conversation in conversations) {
-                ConversationTitleCard(
-                    conversation = conversation,
-                )
+            Column {
+                for (conversation in conversations) {
+                    ConversationTitleCard(
+                        conversation = conversation,
+                    )
+                }
             }
         }
     }

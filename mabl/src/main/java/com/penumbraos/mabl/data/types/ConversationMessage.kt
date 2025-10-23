@@ -2,12 +2,17 @@ package com.penumbraos.mabl.data.types
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
 @Serializable
 @Entity(
     tableName = "conversation_messages",
+    indices = [
+        Index(value = ["conversationId"]),
+        Index(value = ["conversationId", "type", "timestamp"])
+    ],
     foreignKeys = [ForeignKey(
         entity = Conversation::class,
         parentColumns = ["id"],
