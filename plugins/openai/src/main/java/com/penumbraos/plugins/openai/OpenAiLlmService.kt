@@ -13,6 +13,7 @@ import com.aallam.openai.api.core.Parameters
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIHost
+import com.aallam.openai.client.RetryStrategy
 import com.penumbraos.mabl.sdk.BinderConversationMessage
 import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ILlmCallback
@@ -27,6 +28,7 @@ import com.penumbraos.sdk.http.ktor.HttpClientPlugin
 import io.ktor.client.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -36,6 +38,7 @@ import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val TAG = "OpenAiLlmService"
 
@@ -103,6 +106,11 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                     OpenAI(
                         token = apiKey,
                         host = OpenAIHost(baseUrl),
+                        retry = RetryStrategy(
+                            maxRetries = 1,
+                            base = 0.2,
+                            maxDelay = 200.milliseconds
+                        ),
                         httpClientConfig = {
                             if (DeviceUtils.isAiPin()) {
                                 install(HttpClientPlugin) {
@@ -235,33 +243,41 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
 
                     val responseBuilder = StringBuilder()
                     val toolCalls = mutableListOf<ToolCall>()
-                    var messageCount = 0
 
                     val completions = openAI!!.chatCompletions(chatCompletionRequest)
-                    completions.onEach { chunk: ChatCompletionChunk ->
-                        Log.d(TAG, "Received chunk: $chunk")
-                        messageCount += 1
-                        chunk.choices.forEach { choice ->
-                            choice.delta?.let { delta ->
-                                delta.content?.let { content ->
-                                    responseBuilder.append(content)
-                                    callback.onPartialResponse(content)
-                                }
+                    completions
+                        .catch { exception ->
+                            Log.e(TAG, "Error making request", exception)
+                            val content =
+                                "OpenAI error: ${exception.message?.removePrefix("Stream error: ")}"
+                            responseBuilder.append(content)
+                            // TODO: This should be onError
+                            callback.onPartialResponse(content)
+                        }
+                        .onEach { chunk: ChatCompletionChunk ->
+                            Log.d(TAG, "Received chunk: $chunk")
+                            chunk.choices.forEach { choice ->
+                                choice.delta?.let { delta ->
+                                    delta.content?.let { content ->
+                                        responseBuilder.append(content)
+                                        callback.onPartialResponse(content)
+                                    }
 
-                                delta.toolCalls?.forEach { toolCall ->
-                                    if (toolCall.function != null) {
-                                        val convertedToolCall = ToolCall().apply {
-                                            id = toolCall.id!!.id
-                                            name = toolCall.function!!.name
-                                            parameters = toolCall.function!!.arguments
-                                            isLLM = true
+                                    delta.toolCalls?.forEach { toolCall ->
+                                        if (toolCall.function != null) {
+                                            val convertedToolCall = ToolCall().apply {
+                                                id = toolCall.id!!.id
+                                                name = toolCall.function!!.name
+                                                parameters = toolCall.function!!.arguments
+                                                isLLM = true
+                                            }
+                                            toolCalls.add(convertedToolCall)
                                         }
-                                        toolCalls.add(convertedToolCall)
                                     }
                                 }
                             }
                         }
-                    }.collect()
+                        .collect()
 
                     // Send final response
                     val response = LlmResponse().apply {
