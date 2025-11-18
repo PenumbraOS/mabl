@@ -238,6 +238,7 @@ class ConversationManager(
                     })
             }
         } else {
+            Log.d(TAG, "LLM requested 0 tool calls: ${response.text}")
             // No tool calls, this is the final response
             persistAssistantMessage(responseText, emptyArray())
 
@@ -296,19 +297,7 @@ class ConversationManager(
                 }
 
                 override fun onCompleteResponse(response: LlmResponse) {
-                    // This should be the final response after tool execution
-                    val message = BinderConversationMessage().apply {
-                        type = "assistant"
-                        content = response.text ?: ""
-                        toolCalls = emptyArray()
-                        toolCallId = null
-                    }
-                    conversationHistory.add(message)
-
-                    // Persist final assistant response to database
-                    persistMessageSync("assistant", response.text ?: "")
-
-                    callback.onCompleteResponse(response.text ?: "")
+                    handleLlmResponse(response, filteredTools, callback)
                 }
 
                 override fun onError(error: String) {
