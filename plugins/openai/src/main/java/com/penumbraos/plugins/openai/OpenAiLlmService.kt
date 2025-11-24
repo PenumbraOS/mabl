@@ -8,14 +8,7 @@ import android.os.IBinder
 import android.system.Os
 import android.system.OsConstants
 import android.util.Log
-import com.aallam.openai.api.chat.*
-import com.aallam.openai.api.core.Parameters
-import com.aallam.openai.api.model.ModelId
-import com.aallam.openai.client.OpenAI
-import com.aallam.openai.client.OpenAIHost
-import com.aallam.openai.client.RetryStrategy
 import com.penumbraos.mabl.sdk.BinderConversationMessage
-import com.penumbraos.mabl.sdk.DeviceUtils
 import com.penumbraos.mabl.sdk.ILlmCallback
 import com.penumbraos.mabl.sdk.ILlmService
 import com.penumbraos.mabl.sdk.LlmResponse
@@ -24,37 +17,33 @@ import com.penumbraos.mabl.sdk.ToolCall
 import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.mabl.sdk.ToolParameter
 import com.penumbraos.sdk.PenumbraClient
-import com.penumbraos.sdk.http.ktor.HttpClientPlugin
-import io.ktor.client.*
+import dev.langchain4j.agent.tool.ToolExecutionRequest
+import dev.langchain4j.agent.tool.ToolSpecification
+import dev.langchain4j.data.message.AiMessage.aiMessage
+import dev.langchain4j.data.message.ImageContent
+import dev.langchain4j.data.message.SystemMessage.systemMessage
+import dev.langchain4j.data.message.TextContent
+import dev.langchain4j.data.message.ToolExecutionResultMessage.toolExecutionResultMessage
+import dev.langchain4j.data.message.UserMessage.userMessage
+import dev.langchain4j.kotlin.model.chat.StreamingChatModelReply
+import dev.langchain4j.kotlin.model.chat.chatFlow
+import dev.langchain4j.model.chat.StreamingChatModel
+import dev.langchain4j.model.chat.request.ChatRequestParameters
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema
+import dev.langchain4j.model.chat.response.ChatResponse
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.time.Duration.Companion.milliseconds
 
-private const val TAG = "OpenAiLlmService"
-
-@Serializable
-data class ParameterSchema(
-    val type: String,
-    val properties: Map<String, PropertySchema> = emptyMap(),
-    val required: List<String> = emptyList()
-)
-
-@Serializable
-data class PropertySchema(
-    val type: String,
-    val description: String,
-    val enum: List<String>? = null
-)
+private const val TAG = "Langchain4jLlmService"
 
 private const val DEFAULT_PROMPT =
     """You are the MABL voice assistant. Your response will be spoken aloud to the user, so keep the response short and to the point.
@@ -68,10 +57,10 @@ private const val DEFAULT_PROMPT =
         |7. Do not declare limitations (e.g., "I can only do X") if other relevant tools are available for the user's query. You have access to *all* provided tools.
         |8. If no adequate tool is available, you are allowed to fall back on your own knowledge, but only when you have a high confidence of the answer."""
 
-class OpenAiLlmService : MablService("OpenAiLlmService") {
+class OpenAiLlmService : MablService("Langchain4jLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
-    private var openAI: OpenAI? = null
+    private var model: StreamingChatModel? = null
     private val configManager = LlmConfigManager()
     private var currentConfig: LlmConfiguration? = null
 
@@ -80,11 +69,8 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         super.onCreate()
 
         llmScope.launch {
-            var client: PenumbraClient? = null
-            if (DeviceUtils.isAiPin()) {
-                client = PenumbraClient(this@OpenAiLlmService)
-                client.waitForBridge()
-            }
+            var client = PenumbraClient(this@OpenAiLlmService)
+            client.waitForBridge()
 
             try {
                 currentConfig = configManager.getAvailableConfigs().first()
@@ -102,24 +88,12 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                 val apiKey = currentConfig!!.apiKey
                 val baseUrl = currentConfig!!.baseUrl
 
-                openAI =
-                    OpenAI(
-                        token = apiKey,
-                        host = OpenAIHost(baseUrl),
-                        retry = RetryStrategy(
-                            maxRetries = 1,
-                            base = 0.2,
-                            maxDelay = 200.milliseconds
-                        ),
-                        httpClientConfig = {
-                            if (DeviceUtils.isAiPin()) {
-                                install(HttpClientPlugin) {
-                                    // Should have been initialized at start
-                                    penumbraClient = client!!
-                                }
-                            }
-                        }
-                    )
+                model = OpenAiStreamingChatModel.builder()
+                    .httpClientBuilder(KtorHttpClientBuilder(llmScope, client))
+                    .baseUrl(baseUrl).apiKey(apiKey)
+                    .modelName(currentConfig!!.model).temperature(currentConfig!!.temperature)
+                    .maxTokens(currentConfig!!.maxTokens).build()
+
                 Log.w(
                     TAG,
                     "OpenAI client initialized successfully with model: ${currentConfig!!.model}"
@@ -130,12 +104,10 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         }
     }
 
-    private var availableTools: List<Tool>? = null
-
     private val binder = object : ILlmService.Stub() {
+        // TODO: Remove
         override fun setAvailableTools(tools: Array<ToolDefinition>) {
             Log.d(TAG, "Received ${tools.size} tool definitions")
-            availableTools = convertToolDefinitionsToOpenAI(tools)
         }
 
         override fun generateResponse(
@@ -148,141 +120,135 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
                 "Submitting ${messages.size} conversation messages with ${tools.size} filtered tools. Last message: \"${messages.last().content}\""
             )
 
-            if (openAI == null) {
-                Log.e(TAG, "OpenAI client not initialized")
-                callback.onError("OpenAI client not initialized. Check API key configuration.")
+            if (model == null) {
+                Log.e(TAG, "LLM client not initialized")
+                callback.onError("LLM client not initialized. Check API key configuration.")
                 return
             }
 
             llmScope.launch {
                 try {
-                    val conversationMessages = messages.map { message ->
-                        when (message.type) {
-                            "user" -> {
-                                if (message.imageFile != null) {
-                                    val fileDescriptor = message.imageFile.fileDescriptor
-                                    // Rewind file descriptor so we can reuse them
-                                    // TODO: This somehow needs to live in MABL core
-                                    Os.lseek(
-                                        fileDescriptor,
-                                        0,
-                                        OsConstants.SEEK_SET
-                                    )
-                                    val imageBytes =
-                                        FileInputStream(fileDescriptor)
-                                    val byteArrayOutputStream = ByteArrayOutputStream()
-                                    val buffer = ByteArray(4096)
-                                    var bytesRead: Int
-                                    while (imageBytes.read(buffer).also { bytesRead = it } != -1) {
-                                        byteArrayOutputStream.write(buffer, 0, bytesRead)
-                                    }
-                                    val imageUrl =
-                                        Base64.Default.encode(byteArrayOutputStream.toByteArray())
-
-                                    ChatMessage(
-                                        role = ChatRole.User,
-                                        content = listOf(
-                                            TextPart(message.content),
-                                            ImagePart(url = "data:image/jpeg;base64,$imageUrl")
-                                        )
-                                    )
-                                } else {
-                                    ChatMessage(
-                                        role = ChatRole.User,
-                                        content = message.content
-                                    )
-                                }
-                            }
-
-                            "assistant" -> ChatMessage(
-                                role = ChatRole.Assistant,
-                                content = message.content,
-                                toolCalls = message.toolCalls?.map { toolCall ->
-                                    function {
-                                        id = ToolId(toolCall.id)
-                                        function = FunctionCall(
-                                            toolCall.name,
-                                            toolCall.parameters
-                                        )
-                                    }
-                                }
-                            )
-
-                            "tool" -> ChatMessage(
-                                role = ChatRole.Tool,
-                                content = message.content,
-                                toolCallId = message.toolCallId?.let {
-                                    ToolId(
-                                        it
-                                    )
-                                }
-                            )
-
-                            else -> ChatMessage(
-                                role = ChatRole.User,
-                                content = message.content
-                            )
-                        }
-                    }
-
-                    val chatMessages = listOf(
-                        ChatMessage(
-                            role = ChatRole.System,
-                            content = currentConfig!!.systemPrompt
-                                ?: DEFAULT_PROMPT.trimMargin()
-                        )
-                    ) + conversationMessages
-
-                    val chatCompletionRequest = ChatCompletionRequest(
-                        model = ModelId(currentConfig!!.model),
-                        messages = chatMessages,
-                        maxTokens = currentConfig!!.maxTokens,
-                        temperature = currentConfig!!.temperature,
-                        tools = convertToolDefinitionsToOpenAI(tools)
-                    )
-
                     val responseBuilder = StringBuilder()
                     val toolCalls = mutableListOf<ToolCall>()
 
-                    val completions = openAI!!.chatCompletions(chatCompletionRequest)
+                    val completions = model!!.chatFlow {
+                        this.messages += systemMessage(
+                            currentConfig!!.systemPrompt
+                                ?: DEFAULT_PROMPT.trimMargin()
+                        )
+
+                        this.messages += messages.map { message ->
+                            when (message.type) {
+                                "user" -> {
+                                    if (message.imageFile != null) {
+                                        val fileDescriptor = message.imageFile.fileDescriptor
+                                        // Rewind file descriptor so we can reuse them
+                                        // TODO: This somehow needs to live in MABL core
+                                        Os.lseek(
+                                            fileDescriptor,
+                                            0,
+                                            OsConstants.SEEK_SET
+                                        )
+                                        val imageBytes =
+                                            FileInputStream(fileDescriptor)
+                                        val byteArrayOutputStream = ByteArrayOutputStream()
+                                        val buffer = ByteArray(4096)
+                                        var bytesRead: Int
+                                        while (imageBytes.read(buffer)
+                                                .also { bytesRead = it } != -1
+                                        ) {
+                                            byteArrayOutputStream.write(buffer, 0, bytesRead)
+                                        }
+                                        val imageUrl =
+                                            Base64.Default.encode(byteArrayOutputStream.toByteArray())
+
+                                        userMessage(
+                                            TextContent(message.content),
+                                            ImageContent(
+                                                imageUrl,
+                                                "image/jpeg",
+                                                ImageContent.DetailLevel.HIGH
+                                            )
+                                        )
+                                    } else {
+                                        userMessage(TextContent(message.content))
+                                    }
+                                }
+
+                                "assistant" -> aiMessage(
+                                    message.content,
+                                    message.toolCalls.map { toolCall ->
+                                        ToolExecutionRequest.builder().id(toolCall.id)
+                                            .name(toolCall.name).arguments(toolCall.parameters)
+                                            .build()
+                                    }
+                                )
+
+                                // TODO: This tool name might be wrong/necessary
+                                "tool" -> toolExecutionResultMessage(
+                                    message.toolCallId,
+                                    message.toolCallId,
+                                    message.content
+                                )
+
+                                else -> userMessage(message.content)
+                            }
+                        }
+
+                        this.parameters =
+                            ChatRequestParameters.builder().toolSpecifications(
+                                convertToolDefinitionsToAPI(tools)
+                            ).build()
+                    }
+
+                    var finalResponse: ChatResponse? = null
+
                     completions
                         .catch { exception ->
                             Log.e(TAG, "Error making request", exception)
                             val content =
-                                "OpenAI error: ${exception.message?.removePrefix("Stream error: ")}"
+                                "LLM model error: ${exception.message?.removePrefix("Stream error: ")}"
                             responseBuilder.append(content)
                             // TODO: This should be onError
                             callback.onPartialResponse(content)
                         }
-                        .onEach { chunk: ChatCompletionChunk ->
-                            Log.d(TAG, "Received chunk: $chunk")
-                            chunk.choices.forEach { choice ->
-                                choice.delta?.let { delta ->
-                                    delta.content?.let { content ->
-                                        responseBuilder.append(content)
-                                        callback.onPartialResponse(content)
-                                    }
+                        .onEach { chunk ->
+                            when (chunk) {
+                                is StreamingChatModelReply.CompleteResponse -> {
+                                    finalResponse = chunk.response
+                                }
 
-                                    delta.toolCalls?.forEach { toolCall ->
-                                        if (toolCall.function != null) {
-                                            val convertedToolCall = ToolCall().apply {
-                                                id = toolCall.id!!.id
-                                                name = toolCall.function!!.name
-                                                parameters = toolCall.function!!.arguments
-                                                isLLM = true
-                                            }
-                                            toolCalls.add(convertedToolCall)
-                                        }
-                                    }
+                                is StreamingChatModelReply.PartialResponse -> {
+                                    callback.onPartialResponse(chunk.partialResponse)
+                                }
+
+                                is StreamingChatModelReply.Error -> {
+                                    throw chunk.cause
                                 }
                             }
                         }
                         .collect()
 
+                    if (finalResponse == null) {
+                        // TODO: This should be onError
+                        callback.onCompleteResponse(LlmResponse().apply {
+                            text = "LLM model error: Empty response"
+                        })
+                        return@launch
+                    }
+
                     // Send final response
                     val response = LlmResponse().apply {
-                        text = responseBuilder.toString()
-                        this.toolCalls = toolCalls.toTypedArray()
+                        text = finalResponse.aiMessage().text() ?: ""
+                        this.toolCalls =
+                            finalResponse.aiMessage().toolExecutionRequests().map { request ->
+                                ToolCall().apply {
+                                    id = request.id()
+                                    name = request.name()
+                                    parameters = request.arguments()
+                                    isLLM = true
+                                }
+                            }.toTypedArray()
                     }
 
                     val flattenedCalls = toolCalls.joinToString {
@@ -301,44 +267,48 @@ class OpenAiLlmService : MablService("OpenAiLlmService") {
         }
     }
 
-    private fun convertToolDefinitionsToOpenAI(toolDefinitions: Array<ToolDefinition>): List<Tool>? {
+    private fun convertToolDefinitionsToAPI(toolDefinitions: Array<ToolDefinition>): List<ToolSpecification>? {
         if (toolDefinitions.isEmpty()) {
             return null
         }
 
         return toolDefinitions.map { toolDef ->
-            Tool.function(
-                name = toolDef.name,
-                description = toolDef.description,
-                parameters = convertParametersToOpenAI(toolDef.parameters)
-            )
+            ToolSpecification.builder().name(toolDef.name).description(toolDef.description)
+                .parameters(convertParametersToAPI(toolDef.parameters)).build()
         }
     }
 
-    private fun convertParametersToOpenAI(parameters: Array<ToolParameter>): Parameters {
-        val properties = parameters.associate { param ->
-            param.name to PropertySchema(
-                type = param.type,
-                description = param.description,
-                enum = if (param.enumValues.isNotEmpty()) param.enumValues.toList() else null
-            )
+    private fun convertParametersToAPI(parameters: Array<ToolParameter>): JsonObjectSchema {
+        val builder = JsonObjectSchema.builder()
+        val required = mutableListOf<String>()
+
+        for (parameter in parameters) {
+            if (parameter.required) {
+                required += parameter.name
+            }
+
+            when (parameter.type.lowercase()) {
+                "string" -> builder.addStringProperty(parameter.name, parameter.description)
+                "number", "float", "double", "int" -> builder.addNumberProperty(
+                    parameter.name,
+                    parameter.description
+                )
+
+                "enum" -> builder.addEnumProperty(
+                    parameter.name,
+                    parameter.enumValues.toList(),
+                    parameter.description
+                )
+            }
         }
 
-        val required = parameters.filter { it.required }.map { it.name }
-
-        val schema = ParameterSchema(
-            type = "object",
-            properties = properties,
-            required = required
-        )
-
-        return Parameters.fromJsonString(Json.encodeToString(ParameterSchema.serializer(), schema))
+        return builder.required(required).build()
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "OpenAI LLM Service destroyed")
+        Log.d(TAG, "Langchain4j LLM service destroyed")
     }
 }

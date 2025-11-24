@@ -23,11 +23,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 
@@ -36,7 +36,10 @@ dependencies {
 
     implementation(libs.penumbraos.sdk)
 
-    implementation(libs.openai.client)
+    implementation(libs.langchain4j.kotlin)
+    implementation(libs.langchain4j)
+    implementation(libs.langchain4j.openai)
+
     implementation(libs.ktor.client.android)
 
     implementation(libs.kotlinx.serialization.json)
