@@ -1,4 +1,4 @@
-package com.penumbraos.plugins.openai
+package com.penumbraos.mabl.plugins.llm
 
 import com.penumbraos.sdk.PenumbraClient
 import dev.langchain4j.http.client.HttpClient

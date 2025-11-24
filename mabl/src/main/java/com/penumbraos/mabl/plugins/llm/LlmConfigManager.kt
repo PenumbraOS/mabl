@@ -1,4 +1,4 @@
-package com.penumbraos.plugins.openai
+package com.penumbraos.mabl.plugins.llm
 
 import android.annotation.SuppressLint
 import android.util.Log

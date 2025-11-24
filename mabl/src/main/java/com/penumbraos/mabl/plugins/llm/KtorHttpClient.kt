@@ -1,6 +1,5 @@
-package com.penumbraos.plugins.openai
+package com.penumbraos.mabl.plugins.llm
 
-import android.util.Log
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.http.ktor.HttpClientPlugin
 import dev.langchain4j.exception.HttpException

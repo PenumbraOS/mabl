@@ -56,6 +56,22 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera" />
+
+        <service
+            android:name=".plugins.llm.LangchainLlmService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.LLM_SERVICE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DISPLAY_NAME"
+                android:value="Langchain LLM Service" />
+            <meta-data
+                android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
+                android:value="Langchain language model service supporting multiple providers" />
+        </service>
     </application>
 
 </manifest>

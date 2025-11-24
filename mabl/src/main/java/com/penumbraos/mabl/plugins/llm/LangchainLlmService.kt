@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalEncodingApi::class)
 
-package com.penumbraos.plugins.openai
+package com.penumbraos.mabl.plugins.llm
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -43,7 +43,7 @@ import java.io.FileInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-private const val TAG = "Langchain4jLlmService"
+private const val TAG = "LangchainLlmService"
 
 private const val DEFAULT_PROMPT =
     """You are the MABL voice assistant. Your response will be spoken aloud to the user, so keep the response short and to the point.
@@ -57,7 +57,7 @@ private const val DEFAULT_PROMPT =
         |7. Do not declare limitations (e.g., "I can only do X") if other relevant tools are available for the user's query. You have access to *all* provided tools.
         |8. If no adequate tool is available, you are allowed to fall back on your own knowledge, but only when you have a high confidence of the answer."""
 
-class OpenAiLlmService : MablService("Langchain4jLlmService") {
+class LangchainLlmService : MablService("LangchainLlmService") {
 
     private val llmScope = CoroutineScope(Dispatchers.IO)
     private var model: StreamingChatModel? = null
@@ -69,7 +69,7 @@ class OpenAiLlmService : MablService("Langchain4jLlmService") {
         super.onCreate()
 
         llmScope.launch {
-            var client = PenumbraClient(this@OpenAiLlmService)
+            var client = PenumbraClient(this@LangchainLlmService)
             client.waitForBridge()
 
             try {

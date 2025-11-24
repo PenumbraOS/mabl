@@ -70,7 +70,7 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
             // In simulator mode, use more resilient connection approach
             // Only connect to services that are known to work
             try {
-                llm.connect(context, "com.penumbraos.plugins.openai")
+                llm.connect(context, "com.penumbraos.mabl.pinsim")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to connect LLM service in simulator: $e")
             }
@@ -99,7 +99,7 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
             }
         } else {
             // Normal mode - connect to all external services
-            llm.connect(context, "com.penumbraos.plugins.openai")
+            llm.connect(context, "com.penumbraos.mabl.pin")
             stt.connect(context, "com.penumbraos.plugins.demo")
             tts.connect(context, "com.penumbraos.plugins.demo")
             toolOrchestrator.connectAll()
