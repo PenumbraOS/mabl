@@ -16,7 +16,7 @@ penumbraos-sdk = "e1a344b"
 penumbraos-sdk-local = "0.1.0"
 moonlight-ui = "6ae1d5e"
 moonlight-ui-local = "0.1.0"
-langchain4j = "961b2df"
+langchain4j = "67188d8"
 ktor-client = "3.0.0"
 kotlinx-serialization = "1.7.1"
 kotlinx-coroutines = "1.8.1"
@@ -61,6 +61,7 @@ penumbraos-sdk = { group = "com.github.PenumbraOS", name = "sdk", version.ref = 
 moonlight-ui = { group = "com.github.agg23", name = "moonlight", version.ref = "moonlight-ui" }
 #moonlight-ui = { group = "com.open.pin", name = "ui", version.ref = "moonlight-ui-local" }
 langchain4j = { group = "com.github.agg23.langchain4j", name = "langchain4j-bom", version.ref = "langchain4j" }
+langchain4j-gemini = { group = "com.github.agg23.langchain4j", name = "langchain4j-google-ai-gemini", version.ref = "langchain4j" }
 langchain4j-openai = { group = "com.github.agg23.langchain4j", name = "langchain4j-open-ai", version.ref = "langchain4j" }
 langchain4j-kotlin = { group = "com.github.agg23.langchain4j", name = "langchain4j-kotlin", version.ref = "langchain4j" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor-client" }

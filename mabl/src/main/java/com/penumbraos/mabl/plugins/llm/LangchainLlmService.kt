@@ -31,6 +31,7 @@ import dev.langchain4j.model.chat.StreamingChatModel
 import dev.langchain4j.model.chat.request.ChatRequestParameters
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema
 import dev.langchain4j.model.chat.response.ChatResponse
+import dev.langchain4j.model.googleai.GoogleAiGeminiStreamingChatModel
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,28 +79,44 @@ class LangchainLlmService : MablService("LangchainLlmService") {
                 Log.e(TAG, "Failed to load LLM configuration", e)
             }
 
-            if (currentConfig == null) {
+            val config = currentConfig
+
+            if (config == null) {
                 Log.e(TAG, "No valid LLM configuration found")
                 return@launch
             }
 
             try {
-                Log.d(TAG, "About to create OpenAI client")
-                val apiKey = currentConfig!!.apiKey
-                val baseUrl = currentConfig!!.baseUrl
+                Log.d(TAG, "About to create Langchain client")
+                model = when (config) {
+                    is LlmConfiguration.Gemini -> {
+                        GoogleAiGeminiStreamingChatModel.builder()
+                            .allowGoogleSearch(true)
+                            .allowGoogleMaps(true)
+                            .httpClientBuilder(KtorHttpClientBuilder(llmScope, client))
+                            .apiKey(config.apiKey)
+                            .modelName(config.model)
+                            .temperature(config.temperature)
+                            .maxOutputTokens(config.maxTokens).build()
+                    }
 
-                model = OpenAiStreamingChatModel.builder()
-                    .httpClientBuilder(KtorHttpClientBuilder(llmScope, client))
-                    .baseUrl(baseUrl).apiKey(apiKey)
-                    .modelName(currentConfig!!.model).temperature(currentConfig!!.temperature)
-                    .maxTokens(currentConfig!!.maxTokens).build()
+                    is LlmConfiguration.OpenAI -> {
+                        OpenAiStreamingChatModel.builder()
+                            .httpClientBuilder(KtorHttpClientBuilder(llmScope, client))
+                            .baseUrl(config.baseUrl)
+                            .apiKey(config.apiKey)
+                            .modelName(config.model)
+                            .temperature(config.temperature)
+                            .maxTokens(config.maxTokens).build()
+                    }
+                }
 
                 Log.w(
                     TAG,
-                    "OpenAI client initialized successfully with model: ${currentConfig!!.model}"
+                    "${config.type} client initialized successfully with model: ${config.model}"
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize OpenAI client", e)
+                Log.e(TAG, "Failed to initialize Langchain client", e)
             }
         }
     }

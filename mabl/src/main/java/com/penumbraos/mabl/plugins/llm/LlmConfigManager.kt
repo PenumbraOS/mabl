@@ -2,27 +2,10 @@ package com.penumbraos.mabl.plugins.llm
 
 import android.annotation.SuppressLint
 import android.util.Log
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
 private const val TAG = "LlmConfigService"
-
-@Serializable
-data class LlmConfiguration(
-    val name: String,
-    val apiKey: String,
-    val model: String,
-    val maxTokens: Int = 1000,
-    val temperature: Double = 0.7,
-    val systemPrompt: String? = null,
-    val baseUrl: String
-)
-
-@Serializable
-data class LlmConfigFile(
-    val configs: List<LlmConfiguration>
-)
 
 class LlmConfigManager {
 
@@ -50,11 +33,16 @@ class LlmConfigManager {
                 val jsonString = configFile.readText()
                 val configFile = json.decodeFromString<LlmConfigFile>(jsonString)
                 val logMap = configFile.configs.map { config ->
+                    val baseUrlInfo = if (config is LlmConfiguration.OpenAI) {
+                        "Base URL: ${config.baseUrl}\n                        "
+                    } else {
+                        ""
+                    }
                     """
+                        Type: ${config.type}
                         Name: ${config.name}
                         Model: ${config.model}
-                        Base URL: ${config.baseUrl}
-                        Max Tokens: ${config.maxTokens}
+                        ${baseUrlInfo}Max Tokens: ${config.maxTokens}
                         Temperature: ${config.temperature}
                     """.trimIndent()
                 }

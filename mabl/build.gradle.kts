@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.langchain4j.kotlin)
     implementation(libs.langchain4j)
     implementation(libs.langchain4j.openai)
+    implementation(libs.langchain4j.gemini)
 
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.lifecycle)
