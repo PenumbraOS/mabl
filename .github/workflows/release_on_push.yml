@@ -89,7 +89,6 @@ jobs:
 
           # Rename plugin APKs
           cp plugins/demo/build/outputs/apk/release/demo-release.apk "release-artifacts/PenumbraOS-Plugin-Demo-${VERSION_NAME}.apk"
-          cp plugins/openai/build/outputs/apk/release/openai-release.apk "release-artifacts/PenumbraOS-Plugin-OpenAI-${VERSION_NAME}.apk"
           cp plugins/aipinsystem/build/outputs/apk/release/aipinsystem-release.apk "release-artifacts/PenumbraOS-Plugin-AiPin-System-${VERSION_NAME}.apk"
           cp plugins/system/build/outputs/apk/release/system-release.apk "release-artifacts/PenumbraOS-Plugin-Generic-System-${VERSION_NAME}.apk"
           cp plugins/googlesearch/build/outputs/apk/release/googlesearch-release.apk "release-artifacts/PenumbraOS-Plugin-GoogleSearch-${VERSION_NAME}.apk"
