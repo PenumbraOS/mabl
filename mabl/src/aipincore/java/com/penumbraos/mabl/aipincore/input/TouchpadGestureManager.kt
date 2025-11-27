@@ -73,6 +73,14 @@ class TouchpadGestureManager(
             MotionEvent.ACTION_DOWN -> {
                 activePointers.add(event.getPointerId(0))
 
+                sendEventIfAllowed(event, updateLastEventTime = false) {
+                    TouchpadGesture(
+                        TouchpadGestureKind.FINGER_DOWN,
+                        0,
+                        activePointers.size
+                    )
+                }
+
                 if (activePointers.size == 1) {
                     holdStartTime = event.eventTime
                     singleFingerHoldHandler = Handler(Looper.getMainLooper())
@@ -91,14 +99,26 @@ class TouchpadGestureManager(
                 activePointers.remove(event.getPointerId(0))
 
                 // Cancel any pending single finger hold
+                val wasPendingHold = singleFingerHoldHandler != null
                 singleFingerHoldHandler?.removeCallbacksAndMessages(null)
                 singleFingerHoldHandler = null
 
+                val duration = event.eventTime - holdStartTime
+
                 // Handle hold end
                 if (isHolding) {
-                    val duration = event.eventTime - holdStartTime
                     delegate.onGesture(TouchpadGesture(TouchpadGestureKind.HOLD_END, duration, 1))
                     isHolding = false
+                } else if (wasPendingHold && activePointers.isEmpty()) {
+                    // Finger was lifted before any gesture started
+                    // Only send if we didn't just send a recognized gesture
+                    sendEventIfAllowed(event, updateLastEventTime = false) {
+                        TouchpadGesture(
+                            TouchpadGestureKind.GESTURE_CANCEL,
+                            duration,
+                            1
+                        )
+                    }
                 }
             }
             // A non-primary touch has changed
@@ -149,12 +169,18 @@ class TouchpadGestureManager(
     /**
      * Send TouchpadGesture if allowed based on time since last event. Specifically to prevent sending gesture start events too close together
      */
-    private fun sendEventIfAllowed(event: MotionEvent, lambda: () -> TouchpadGesture) {
+    private fun sendEventIfAllowed(
+        event: MotionEvent,
+        updateLastEventTime: Boolean = true,
+        lambda: () -> TouchpadGesture,
+    ) {
         if (event.eventTime < lastEventTime + MIN_GESTURE_SEPARATION_MS) {
             return
         }
 
-        lastEventTime = event.eventTime
+        if (updateLastEventTime) {
+            lastEventTime = event.eventTime
+        }
         delegate.onGesture(lambda())
     }
 
@@ -163,8 +189,15 @@ class TouchpadGestureManager(
 
         if (isHolding) {
             delegate.onGesture(TouchpadGesture(TouchpadGestureKind.HOLD_END, duration, 2))
+            isHolding = false
         } else if (duration < 200) {
             delegate.onGesture(TouchpadGesture(TouchpadGestureKind.SINGLE_TAP, duration, 2))
+        } else {
+            // Finger was lifted before any gesture completed
+            // Only send if we didn't just send a recognized gesture
+            sendEventIfAllowed(event, updateLastEventTime = false) {
+                TouchpadGesture(TouchpadGestureKind.GESTURE_CANCEL, duration, 2)
+            }
         }
     }
 }

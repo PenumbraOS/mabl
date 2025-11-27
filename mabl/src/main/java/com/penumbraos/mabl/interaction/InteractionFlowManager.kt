@@ -44,6 +44,8 @@ class InteractionFlowManager
     private var stateCallback: InteractionStateCallback? = null
     private var contentCallback: InteractionContentCallback? = null
 
+    private var didAbort: Boolean = false
+
     private var cameraService: CameraService? = null
     private var isCameraServiceBound = false
 
@@ -64,11 +66,17 @@ class InteractionFlowManager
 
     private val sttCallback = object : ISttCallback.Stub() {
         override fun onPartialTranscription(partialText: String) {
+            if (didAbort) {
+                return
+            }
             Log.d(TAG, "STT partial transcription: $partialText")
             contentCallback?.onPartialTranscription(partialText)
         }
 
         override fun onFinalTranscription(finalText: String) {
+            if (didAbort) {
+                return
+            }
             Log.d(TAG, "STT final transcription: $finalText")
             setState(InteractionFlowState.PROCESSING)
             contentCallback?.onFinalTranscription(finalText)
@@ -95,16 +103,22 @@ class InteractionFlowManager
     }
 
     override fun startListening(requestImage: Boolean) {
-        if (currentState != InteractionFlowState.IDLE) {
+        currentModality =
+            if (requestImage) InteractionFlowModality.Vision else InteractionFlowModality.Speech
+
+        if (currentState == InteractionFlowState.LISTENING) {
+            Log.d(TAG, "Already listening. Continuing")
+            return
+        } else if (currentState != InteractionFlowState.IDLE) {
             Log.w(TAG, "Cannot start listening, current state: $currentState")
             return
         }
 
+        didAbort = false
+
         try {
             allControllers.stt.startListening()
             setState(InteractionFlowState.LISTENING)
-            currentModality =
-                if (requestImage) InteractionFlowModality.Vision else InteractionFlowModality.Speech
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start listening: ${e.message}")
             stateCallback?.onError(Error.SttError("Failed to start listening: ${e.message}"))
@@ -171,15 +185,20 @@ class InteractionFlowManager
         }
     }
 
-    override fun finishListening() {
+    override fun finishListening(abort: Boolean) {
         Log.d(TAG, "Stopping listening, state: $currentState")
         setState(InteractionFlowState.CANCELLING)
 
+        didAbort = abort
         allControllers.stt.cancelListening()
         allControllers.tts.service?.stopSpeaking()
 
         setState(InteractionFlowState.IDLE)
         stateCallback?.onUserFinished()
+    }
+
+    override fun cancelTalking() {
+        allControllers.tts.service?.stopSpeaking()
     }
 
     override fun isFlowActive(): Boolean {

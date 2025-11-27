@@ -65,15 +65,28 @@ open class PlatformInputHandler(
             object : ITouchpadGestureDelegate {
                 override fun onGesture(gesture: TouchpadGesture) {
                     // TODO: Build proper API for Input Handler to perform standardized triggers
-                    if (gesture.kind != TouchpadGestureKind.HOLD_END) {
-                        // Any gesture that isn't a release should halt talking
-                        interactionFlowManager.finishListening()
+                    if (gesture.kind != TouchpadGestureKind.HOLD_END && 
+                        gesture.kind != TouchpadGestureKind.FINGER_DOWN &&
+                        gesture.kind != TouchpadGestureKind.GESTURE_CANCEL) {
+                        // Any gesture that isn't a release (or intermediate finger down/cancel) should halt talking
+                        interactionFlowManager.cancelTalking()
                     }
 
                     when (gesture.kind) {
+                        TouchpadGestureKind.FINGER_DOWN -> {
+                            // Immediately start listening, even if we abort later
+                            interactionFlowManager.startListening()
+                        }
+
+                        TouchpadGestureKind.GESTURE_CANCEL -> {
+                            interactionFlowManager.finishListening(abort = true)
+                        }
+
                         TouchpadGestureKind.DOUBLE_TAP -> {
                             // TODO: Fix double tap with two fingers
 //                            if (gesture.fingerCount == 2) {
+                            // Cancel listening if it is ongoing
+                            interactionFlowManager.finishListening(abort = true)
                             interactionFlowManager.takePicture()
 //                            }
                         }

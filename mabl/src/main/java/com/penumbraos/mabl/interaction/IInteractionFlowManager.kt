@@ -6,7 +6,8 @@ import com.penumbraos.mabl.types.Error
 interface IInteractionFlowManager {
     fun startListening(requestImage: Boolean = false)
     fun startConversationFromInput(userInput: String)
-    fun finishListening()
+    fun finishListening(abort: Boolean = false)
+    fun cancelTalking()
     fun isFlowActive(): Boolean
     fun getCurrentFlowState(): InteractionFlowState
 
