@@ -39,8 +39,14 @@ class DemoSttService : MablService("DemoSttService") {
             client.stt.initialize(object : SttRecognitionListener() {
                 override fun onError(error: Int) {
                     try {
-                        currentCallback?.onError("Recognition error: $error")
-                    } catch (e: RemoteException) {
+                        // RecognitionError.ERROR_NO_MATCH
+                        if (error == 7) {
+                            Log.d("DemoSttService", "No speech recognized")
+                            currentCallback?.onFinalTranscription("")
+                        } else {
+                            currentCallback?.onError("Recognition error: $error")
+                        }
+                    } catch (e: Exception) {
                         Log.e("DemoSttService", "Callback error", e)
                     }
                 }

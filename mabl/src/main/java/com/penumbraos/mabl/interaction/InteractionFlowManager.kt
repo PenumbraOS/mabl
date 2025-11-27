@@ -77,12 +77,19 @@ class InteractionFlowManager
             if (didAbort) {
                 return
             }
-            Log.d(TAG, "STT final transcription: $finalText")
-            setState(InteractionFlowState.PROCESSING)
-            contentCallback?.onFinalTranscription(finalText)
 
-            // Start conversation with the transcribed text
-            startConversationFromInput(finalText)
+            if (finalText.trim().isEmpty()) {
+                Log.d(TAG, "STT transcription was empty, skipping")
+                setState(InteractionFlowState.IDLE)
+                stateCallback?.onError(Error.SttError("Empty transcription"))
+            } else {
+                Log.d(TAG, "STT final transcription: $finalText")
+                setState(InteractionFlowState.PROCESSING)
+                contentCallback?.onFinalTranscription(finalText)
+
+                // Start conversation with the transcribed text
+                startConversationFromInput(finalText)
+            }
         }
 
         override fun onError(errorMessage: String) {
