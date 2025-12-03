@@ -18,6 +18,8 @@ import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.content.TextContent
+import io.ktor.http.ContentType
 import io.ktor.http.isSuccess
 import io.ktor.util.toMap
 import io.ktor.utils.io.jvm.javaio.toInputStream
@@ -32,6 +34,8 @@ class KtorHttpClient : HttpClient {
     constructor(coroutineScope: CoroutineScope, penumbraClient: PenumbraClient) {
         this.coroutineScope = coroutineScope
         this.ktorClient = io.ktor.client.HttpClient {
+            // Otherwise ktor strips ContentType
+            useDefaultTransformers = false
             install(HttpClientPlugin) {
                 this.penumbraClient = penumbraClient
             }
@@ -94,7 +98,20 @@ class KtorHttpClient : HttpClient {
         for ((key, values) in langChainRequest.headers()) {
             builder.headers.appendAll(key, values)
         }
-        builder.setBody(langChainRequest.body())
+        val contentTypeString = langChainRequest.headers()["ContentType"]?.first() ?: ""
+
+        val contentType = try {
+            ContentType.parse(contentTypeString)
+        } catch (_: Exception) {
+            ContentType.Application.Json
+        }
+
+        builder.setBody(
+            TextContent(
+                langChainRequest.body(),
+                contentType
+            )
+        )
     }
 
     private suspend fun buildResponse(
