@@ -12,6 +12,7 @@ import com.penumbraos.mabl.interaction.InteractionFlowManager
 import com.penumbraos.mabl.sound.SoundEffectManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import java.io.File
 
 private const val TAG = "AllControllers"
 
@@ -64,6 +65,9 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
         connectAll(context)
     }
 
+    private fun useOpenClaw(): Boolean =
+        File("/sdcard/penumbra/etc/mabl/openclaw.json").exists()
+
     private suspend fun connectAll(context: Context) {
         // TODO: These packages shouldn't be hardcoded
         if (BuildConfig.IS_SIMULATOR) {
@@ -99,7 +103,16 @@ class AllControllers(coroutineScope: CoroutineScope, private val context: Contex
             }
         } else {
             // Normal mode - connect to all external services
-            llm.connect(context, "com.penumbraos.mabl.pin")
+            if (useOpenClaw()) {
+                Log.w(TAG, "OpenClaw config found, using OpenClawLlmService")
+                llm.connect(
+                    context,
+                    context.packageName,
+                    "com.penumbraos.mabl.plugins.llm.OpenClawLlmService"
+                )
+            } else {
+                llm.connect(context, "com.penumbraos.mabl.pin")
+            }
             stt.connect(context, "com.penumbraos.plugins.demo")
             tts.connect(context, "com.penumbraos.plugins.demo")
             toolOrchestrator.connectAll()

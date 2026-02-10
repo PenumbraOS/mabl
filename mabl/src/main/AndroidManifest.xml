@@ -72,6 +72,14 @@
                 android:name="com.penumbraos.mabl.sdk.metadata.DESCRIPTION"
                 android:value="Langchain language model service supporting multiple providers" />
         </service>
+
+        <service
+            android:name=".plugins.llm.OpenClawLlmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.penumbraos.mabl.sdk.action.LLM_SERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
