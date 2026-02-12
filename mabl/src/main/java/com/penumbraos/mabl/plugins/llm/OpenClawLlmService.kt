@@ -2,6 +2,8 @@ package com.penumbraos.mabl.plugins.llm
 
 import android.content.Intent
 import android.os.IBinder
+import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import com.penumbraos.mabl.sdk.BinderConversationMessage
 import com.penumbraos.mabl.sdk.ILlmCallback
@@ -12,16 +14,22 @@ import com.penumbraos.mabl.sdk.ToolDefinition
 import com.penumbraos.sdk.PenumbraClient
 import com.penumbraos.sdk.api.WebSocketClient
 import com.penumbraos.sdk.api.WebSocketMessageType
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 private const val TAG = "OpenClawLlmService"
 private const val CONFIG_PATH = "/sdcard/penumbra/etc/mabl/openclaw.json"
@@ -45,6 +53,7 @@ class OpenClawLlmService : MablService("OpenClawLlmService") {
     private var destroyed = false
     private val maxReconnectAttempts = 7
     private var gaveUpReconnecting = false
+    private var connectDeferred: CompletableDeferred<Boolean>? = null
 
     // Pending agent runs: clientRunId -> callback
     private val pendingRuns = ConcurrentHashMap<String, ILlmCallback>()
@@ -82,6 +91,8 @@ class OpenClawLlmService : MablService("OpenClawLlmService") {
 
     private suspend fun connectGateway() {
         val cfg = config ?: return
+        val deferred = CompletableDeferred<Boolean>()
+        connectDeferred = deferred
 
         Log.d(TAG, "Connecting to OpenClaw gateway at ${cfg.gatewayUrl}")
 
@@ -100,6 +111,7 @@ class OpenClawLlmService : MablService("OpenClawLlmService") {
             Log.w(TAG, "WebSocket closed")
             connected = false
             ws = null
+            connectDeferred?.complete(false)
             failAllPendingRuns("Connection lost")
             scheduleReconnect()
         }
@@ -196,6 +208,7 @@ class OpenClawLlmService : MablService("OpenClawLlmService") {
             connected = true
             reconnectAttempt = 0
             gaveUpReconnecting = false
+            connectDeferred?.complete(true)
             Log.w(TAG, "Connected to OpenClaw gateway (protocol ${payload.optInt("protocol")})")
             subscribeToSession()
         }
@@ -288,44 +301,93 @@ class OpenClawLlmService : MablService("OpenClawLlmService") {
             tools: Array<ToolDefinition>,
             callback: ILlmCallback
         ) {
-            if (!connected || ws == null) {
-                if (gaveUpReconnecting) {
-                    Log.d(TAG, "Retrying connection on user request")
-                    gaveUpReconnecting = false
+            scope.launch {
+                if (!connected || ws == null) {
+                    Log.d(TAG, "Not connected, attempting reconnect (5s deadline)")
                     reconnectAttempt = 0
-                    scope.launch {
-                        try { connectGateway() } catch (_: Exception) {}
+                    gaveUpReconnecting = false
+
+                    // If no reconnect is already in-flight, start one
+                    if (connectDeferred == null || connectDeferred!!.isCompleted) {
+                        try {
+                            connectGateway()
+                        } catch (_: Exception) {
+                            connectDeferred?.complete(false)
+                        }
+                    }
+
+                    val reconnected = withTimeoutOrNull(5000L) {
+                        connectDeferred?.await()
+                    } ?: false
+
+                    if (!reconnected) {
+                        reconnectAttempt = 0
+                        callback.onError("Not connected to OpenClaw gateway")
+                        return@launch
                     }
                 }
-                callback.onError("Not connected to OpenClaw gateway")
-                return
-            }
 
-            // Extract the last user message
-            val userMessage = messages.lastOrNull { it.type == "user" }?.content
-            if (userMessage.isNullOrBlank()) {
-                callback.onError("No user message found")
-                return
-            }
+                // Extract the last user message
+                val lastUserMsg = messages.lastOrNull { it.type == "user" }
+                val userMessage = lastUserMsg?.content
+                if (userMessage.isNullOrBlank()) {
+                    callback.onError("No user message found")
+                    return@launch
+                }
 
-            val clientRunId = "pin-${UUID.randomUUID()}"
-            pendingRuns[clientRunId] = callback
-            activeRunId = clientRunId
+                // Encode image if present (vision mode: 2-finger hold)
+                val imageBase64 = readImageBase64(lastUserMsg)
 
-            Log.d(TAG, "Sending to OpenClaw: \"$userMessage\"")
+                val clientRunId = "pin-${UUID.randomUUID()}"
+                pendingRuns[clientRunId] = callback
+                activeRunId = clientRunId
 
-            send(JSONObject().apply {
-                put("type", "req")
-                put("id", nextId())
-                put("method", "node.event")
-                put("params", JSONObject().apply {
-                    put("event", "agent.request")
-                    put("payloadJSON", JSONObject().apply {
-                        put("message", userMessage)
-                        put("sessionKey", SESSION_KEY)
-                    }.toString())
+                Log.d(TAG, "Sending to OpenClaw: \"$userMessage\"${if (imageBase64 != null) " [with image]" else ""}")
+
+                send(JSONObject().apply {
+                    put("type", "req")
+                    put("id", nextId())
+                    put("method", "node.event")
+                    put("params", JSONObject().apply {
+                        put("event", "agent.request")
+                        put("payloadJSON", JSONObject().apply {
+                            put("message", userMessage)
+                            put("sessionKey", SESSION_KEY)
+                            if (imageBase64 != null) {
+                                put("images", org.json.JSONArray().apply {
+                                    put(JSONObject().apply {
+                                        put("type", "image")
+                                        put("data", imageBase64)
+                                        put("mimeType", "image/jpeg")
+                                    })
+                                })
+                            }
+                        }.toString())
+                    })
                 })
-            })
+            }
+        }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun readImageBase64(message: BinderConversationMessage): String? {
+        val pfd = message.imageFile ?: return null
+        return try {
+            val fd = pfd.fileDescriptor
+            Os.lseek(fd, 0, OsConstants.SEEK_SET)
+            val input = FileInputStream(fd)
+            val buffer = ByteArray(4096)
+            val output = ByteArrayOutputStream()
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                output.write(buffer, 0, bytesRead)
+            }
+            val encoded = Base64.Default.encode(output.toByteArray())
+            Log.d(TAG, "Encoded image: ${output.size()} bytes -> ${encoded.length} chars base64")
+            encoded
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read image", e)
+            null
         }
     }
 
