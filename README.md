@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This exploit path is deprecated and is no longer in use. See [humane-system-hook](https://github.com/PenumbraOS/humane-system-hook) for current PenumbraOS work.
+
 # MABL launcher for PenumbraOS
 
 This is primary user entrypoint app for [PenumbraOS](https://github.com/PenumbraOS/), the full development platform for the late Humane Ai Pin.
